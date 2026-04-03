@@ -1,23 +1,19 @@
 {
-  "name": "@wren/main",
+  "name": "@wren/ai",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.json",
-    "start": "electron .",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
   "dependencies": {
-    "@wren/ai": "workspace:*",
-    "@wren/shared": "workspace:*",
-    "node-pty": "^1.1.0"
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@wren/shared": "workspace:*"
   },
   "devDependencies": {
-    "electron": "^33.3.1",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
 }

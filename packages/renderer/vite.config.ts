@@ -8,6 +8,16 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1500, // Monaco + xterm are large
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          monaco: ["@monaco-editor/react"],
+          xterm: ["@xterm/xterm", "@xterm/addon-fit"],
+          react: ["react", "react-dom"],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
@@ -17,5 +27,12 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+  },
+  // Monaco editor uses web workers — tell Vite to treat them as assets
+  worker: {
+    format: "es",
+  },
+  optimizeDeps: {
+    include: ["@monaco-editor/react"],
   },
 });

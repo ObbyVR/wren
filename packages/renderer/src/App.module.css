@@ -1,92 +1,35 @@
-/* Wren design palette: Compass — smeraldo #34D07B */
-:root {
-  --color-accent: #34d07b;
-  --color-accent-hover: #2ab869;
-  --color-bg: #0f1117;
-  --color-surface: #1a1d27;
-  --color-border: #2a2d3a;
-  --color-text: #e2e4ec;
-  --color-text-muted: #8b8fa8;
-}
-
-.container {
-  min-height: 100vh;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+.shell {
+  width: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 2rem;
+  overflow: hidden;
 }
 
-.header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.title {
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--color-accent);
-  margin: 0 0 0.5rem;
-  letter-spacing: -0.02em;
-}
-
-.tagline {
-  color: var(--color-text-muted);
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.main {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  width: 100%;
-  max-width: 800px;
-}
-
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  min-width: 280px;
-  flex: 1;
-}
-
-.card h2 {
-  margin: 0 0 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.button {
-  background: var(--color-accent);
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1.2rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
+/* Horizontal resize handle between sidebar and main area */
+.hHandle {
+  width: 4px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
   transition: background 0.15s;
 }
 
-.button:hover {
-  background: var(--color-accent-hover);
+.hHandle:hover,
+.hHandle[data-resize-handle-active] {
+  background: var(--accent);
 }
 
-.result {
-  margin-top: 1rem;
-  color: var(--color-text-muted);
+/* Vertical resize handle between editor and terminal */
+.vHandle {
+  height: 4px;
+  cursor: row-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.vHandle:hover,
+.vHandle[data-resize-handle-active] {
+  background: var(--accent);
 }

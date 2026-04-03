@@ -1,0 +1,47 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0c0c0e;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  gap: 8px;
+}
+
+.title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
+
+.newBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+}
+
+.newBtn:hover {
+  background: var(--bg-tab);
+  color: var(--accent);
+}
+
+.termWrapper {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px;
+}

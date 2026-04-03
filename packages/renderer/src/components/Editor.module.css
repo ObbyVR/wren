@@ -1,0 +1,102 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  height: 36px;
+}
+
+.tabBar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  background: var(--bg-tab);
+  flex-shrink: 0;
+  min-width: 80px;
+  max-width: 180px;
+  position: relative;
+}
+
+.tab:hover {
+  background: var(--bg-tab-active);
+  color: var(--text-primary);
+}
+
+.tabActive {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent);
+}
+
+.tabName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabDirty {
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.tabClose {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tabClose:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.editorWrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emptyLogo {
+  font-size: 48px;
+  opacity: 0.3;
+}

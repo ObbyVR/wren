@@ -1,48 +1,95 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { Group, Panel, Separator } from "react-resizable-panels";
+import type { Layout } from "react-resizable-panels";
+import { FileTree } from "./components/FileTree";
+import { Editor } from "./components/Editor";
+import { Terminal } from "./components/Terminal";
 import styles from "./App.module.css";
 
-function App() {
-  const [version, setVersion] = useState<string>("...");
-  const [pingResult, setPingResult] = useState<string>("");
+const STORAGE_KEY_ROOT = "wren:rootPath";
+const STORAGE_KEY_LAYOUT_H = "wren:layout:horizontal";
+const STORAGE_KEY_LAYOUT_V = "wren:layout:vertical";
 
-  useEffect(() => {
-    window.wren.invoke("app:get-version").then(setVersion).catch(console.error);
+function loadLayout(key: string): Layout | undefined {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as Layout;
+  } catch { /* ignore */ }
+  return undefined;
+}
+
+export default function App() {
+  const [rootPath, setRootPath] = useState<string | null>(
+    () => localStorage.getItem(STORAGE_KEY_ROOT),
+  );
+  const [openFilePath, setOpenFilePath] = useState<string | null>(null);
+  const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
+
+  const handleFileOpen = useCallback((path: string) => {
+    setOpenFilePath(path);
+    setActiveFilePath(path);
   }, []);
 
-  const handlePing = async () => {
-    const result = await window.wren.invoke("app:ping", "hello");
-    setPingResult(result);
-  };
+  const handlePathHandled = useCallback(() => {
+    setOpenFilePath(null);
+  }, []);
+
+  const handleOpenFolder = useCallback(async () => {
+    const path = window.prompt("Enter folder path:");
+    if (path && path.trim()) {
+      const trimmed = path.trim();
+      setRootPath(trimmed);
+      localStorage.setItem(STORAGE_KEY_ROOT, trimmed);
+    }
+  }, []);
+
+  const termCwd = rootPath ?? "/";
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Wren IDE</h1>
-        <p className={styles.tagline}>Your keys. Your models. Your workspace.</p>
-      </header>
+    <div className={styles.shell}>
+      <Group
+        orientation="horizontal"
+        defaultLayout={loadLayout(STORAGE_KEY_LAYOUT_H)}
+        onLayoutChange={(layout: Layout) =>
+          localStorage.setItem(STORAGE_KEY_LAYOUT_H, JSON.stringify(layout))
+        }
+      >
+        {/* Left: File Tree */}
+        <Panel defaultSize={20} minSize={12} maxSize={40}>
+          <FileTree
+            rootPath={rootPath}
+            activePath={activeFilePath}
+            onFileOpen={handleFileOpen}
+            onOpenFolder={handleOpenFolder}
+          />
+        </Panel>
 
-      <main className={styles.main}>
-        <section className={styles.card}>
-          <h2>App Info</h2>
-          <p>
-            Version: <strong>{version}</strong>
-          </p>
-        </section>
+        <Separator className={styles.hHandle} />
 
-        <section className={styles.card}>
-          <h2>IPC Bridge Test</h2>
-          <button className={styles.button} onClick={handlePing}>
-            Ping Main Process
-          </button>
-          {pingResult && (
-            <p className={styles.result}>
-              Response: <strong>{pingResult}</strong>
-            </p>
-          )}
-        </section>
-      </main>
+        {/* Center+Right: Editor + Terminal stacked vertically */}
+        <Panel defaultSize={80} minSize={40}>
+          <Group
+            orientation="vertical"
+            defaultLayout={loadLayout(STORAGE_KEY_LAYOUT_V)}
+            onLayoutChange={(layout: Layout) =>
+              localStorage.setItem(STORAGE_KEY_LAYOUT_V, JSON.stringify(layout))
+            }
+          >
+            <Panel defaultSize={70} minSize={20}>
+              <Editor
+                openPath={openFilePath}
+                onPathHandled={handlePathHandled}
+              />
+            </Panel>
+
+            <Separator className={styles.vHandle} />
+
+            <Panel defaultSize={30} minSize={15} maxSize={60}>
+              <Terminal cwd={termCwd} />
+            </Panel>
+          </Group>
+        </Panel>
+      </Group>
     </div>
   );
 }
-
-export default App;

@@ -9,8 +9,5 @@
     "target": "ES2022"
   },
   "include": ["src"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../ai" }
-  ]
+  "references": [{ "path": "../shared" }]
 }
