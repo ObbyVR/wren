@@ -5,6 +5,7 @@ import type { IpcChannelMap, FileEntry } from "@wren/shared";
 import type * as nodePtyTypes from "node-pty";
 import { registerAiHandlers } from "./ai-handlers";
 import { projectStore } from "./project-store";
+import { BridgeManager } from "./bridge-manager";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -15,6 +16,8 @@ const isDev = process.env.NODE_ENV === "development";
 const terminals = new Map<string, nodePtyTypes.IPty>();
 let terminalCounter = 0;
 let mainWindow: BrowserWindow | null = null;
+
+const bridgeManager = new BridgeManager({ getWindow: () => mainWindow });
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -169,10 +172,36 @@ function registerHandlers(): void {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
     return result.canceled ? null : (result.filePaths[0] ?? null);
   });
+
+  // Browser Bridge (Nexus Bridge) handlers
+  handle("bridge:open-preview", (_event, payload) => {
+    return bridgeManager.openPreview(payload);
+  });
+
+  handle("bridge:close-preview", (_event, { wrenWindowId }) => {
+    bridgeManager.closePreview(wrenWindowId);
+  });
+
+  handle("bridge:resize-preview", (_event, payload) => {
+    bridgeManager.resizePreview(payload);
+  });
+
+  handle("bridge:navigate-preview", (_event, { wrenWindowId, url }) => {
+    bridgeManager.navigatePreview(wrenWindowId, url);
+  });
+
+  handle("bridge:get-status", () => {
+    return bridgeManager.getStatus();
+  });
+
+  handle("bridge:list-windows", () => {
+    return bridgeManager.listWindows();
+  });
 }
 
 app.whenReady().then(() => {
   registerHandlers();
+  bridgeManager.start();
   createWindow();
 
   app.on("activate", () => {

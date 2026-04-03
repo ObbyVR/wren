@@ -6,6 +6,8 @@ import type {
   AiStreamChunkEvent,
   AiStreamDoneEvent,
   AiStreamErrorEvent,
+  BridgeStatus,
+  BridgeNetworkEvent,
 } from "@wren/shared";
 
 const wrenApi = {
@@ -35,6 +37,67 @@ const wrenApi = {
     };
     ipcRenderer.on("terminal:exit", handler);
     return () => ipcRenderer.removeListener("terminal:exit", handler);
+  },
+
+  // Bridge push events: main → renderer
+  onBridgePreviewOpened: (
+    callback: (data: { wrenWindowId: string; chromeWindowId: number }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { wrenWindowId: string; chromeWindowId: number },
+    ) => {
+      callback(data);
+    };
+    ipcRenderer.on("bridge:preview-opened", handler);
+    return () => ipcRenderer.removeListener("bridge:preview-opened", handler);
+  },
+
+  onBridgePreviewClosed: (
+    callback: (data: { wrenWindowId: string; reason?: string }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { wrenWindowId: string; reason?: string },
+    ) => {
+      callback(data);
+    };
+    ipcRenderer.on("bridge:preview-closed", handler);
+    return () => ipcRenderer.removeListener("bridge:preview-closed", handler);
+  },
+
+  onBridgePreviewError: (
+    callback: (data: { wrenWindowId: string; error: string }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { wrenWindowId: string; error: string },
+    ) => {
+      callback(data);
+    };
+    ipcRenderer.on("bridge:preview-error", handler);
+    return () => ipcRenderer.removeListener("bridge:preview-error", handler);
+  },
+
+  onBridgeNetworkEvent: (
+    callback: (data: { wrenWindowId: string; event: BridgeNetworkEvent }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { wrenWindowId: string; event: BridgeNetworkEvent },
+    ) => {
+      callback(data);
+    };
+    ipcRenderer.on("bridge:network-event", handler);
+    return () => ipcRenderer.removeListener("bridge:network-event", handler);
+  },
+
+  onBridgeStatusChanged: (callback: (status: BridgeStatus) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, status: BridgeStatus) => {
+      callback(status);
+    };
+    ipcRenderer.on("bridge:status-changed", handler);
+    return () => ipcRenderer.removeListener("bridge:status-changed", handler);
   },
 
   // AI streaming events: main → renderer

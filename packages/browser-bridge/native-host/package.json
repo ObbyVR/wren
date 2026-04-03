@@ -1,0 +1,13 @@
+{
+  "name": "@wren/nexus-bridge-host",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wren Nexus Bridge — native messaging host for Chrome extension",
+  "main": "wren-bridge.js",
+  "scripts": {
+    "start": "node wren-bridge.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

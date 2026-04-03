@@ -8,6 +8,7 @@ import { ChatPanel } from "./components/ChatPanel";
 import { TabBar } from "./components/TabBar";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
 import { CostDashboard } from "./components/CostDashboard/CostDashboard";
+import { PreviewPanel } from "./components/PreviewPanel";
 import { ProjectProvider, useProjects } from "./store/projectStore";
 import { ProviderProvider } from "./store/providerStore";
 import { CostProvider } from "./store/costStore";
@@ -31,9 +32,10 @@ interface WorkspaceProps {
   project: ProjectTab;
   visible: boolean;
   chatOpen: boolean;
+  previewOpen: boolean;
 }
 
-function ProjectWorkspace({ project, visible, chatOpen }: WorkspaceProps) {
+function ProjectWorkspace({ project, visible, chatOpen, previewOpen }: WorkspaceProps) {
   const [openFilePath, setOpenFilePath] = useState<string | null>(null);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
 
@@ -90,7 +92,7 @@ function ProjectWorkspace({ project, visible, chatOpen }: WorkspaceProps) {
         <Separator className={styles.hHandle} />
 
         {/* Center: Editor + Terminal stacked vertically */}
-        <Panel defaultSize={chatOpen ? 54 : 82} minSize={30}>
+        <Panel defaultSize={chatOpen || previewOpen ? 54 : 82} minSize={30}>
           <Group
             orientation="vertical"
             defaultLayout={loadLayout(`${STORAGE_KEY_LAYOUT_V}:${project.id}`)}
@@ -116,8 +118,17 @@ function ProjectWorkspace({ project, visible, chatOpen }: WorkspaceProps) {
         {chatOpen && (
           <>
             <Separator className={styles.hHandle} />
-            <Panel defaultSize={28} minSize={20} maxSize={50}>
+            <Panel defaultSize={previewOpen ? 14 : 28} minSize={14} maxSize={50}>
               <ChatPanel />
+            </Panel>
+          </>
+        )}
+
+        {previewOpen && (
+          <>
+            <Separator className={styles.hHandle} />
+            <Panel defaultSize={chatOpen ? 14 : 28} minSize={14} maxSize={50}>
+              <PreviewPanel />
             </Panel>
           </>
         )}
@@ -131,6 +142,7 @@ function ProjectWorkspace({ project, visible, chatOpen }: WorkspaceProps) {
 function AppInner() {
   const { projects, activeProjectId } = useProjects();
   const [chatOpen, setChatOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showCostDashboard, setShowCostDashboard] = useState(false);
 
@@ -159,6 +171,7 @@ function AppInner() {
           project={project}
           visible={project.id === activeProjectId}
           chatOpen={chatOpen}
+          previewOpen={previewOpen}
         />
       ))}
 
@@ -179,6 +192,13 @@ function AppInner() {
           $ Cost
         </button>
         <span className={styles.statusSpacer} />
+        <button
+          className={styles.statusBtn}
+          onClick={() => setPreviewOpen((v) => !v)}
+          title={previewOpen ? "Hide browser preview" : "Show browser preview (Nexus Bridge)"}
+        >
+          {previewOpen ? "✕ Preview" : "◉ Preview"}
+        </button>
         <button
           className={styles.chatToggleBtn}
           onClick={() => setChatOpen((v) => !v)}

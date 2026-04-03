@@ -1,0 +1,318 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--panel-bg, #1e1e1e);
+  color: var(--text-primary, #cccccc);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border, #333);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted, #888);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotConnected {
+  background: #4caf50;
+}
+
+.dotDisconnected {
+  background: #666;
+}
+
+.statusText {
+  font-size: 11px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-muted, #888);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab:hover {
+  color: var(--text-primary, #ccc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tabActive {
+  color: var(--text-primary, #ccc);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.badge {
+  background: var(--accent, #7c6af5);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+/* ── Preview Tab ─────────────────────────────────────────────────────────── */
+.previewTab {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 8px;
+  gap: 8px;
+}
+
+.urlBar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.urlInput {
+  flex: 1;
+  background: var(--input-bg, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  color: var(--text-primary, #ccc);
+  padding: 5px 8px;
+  font-size: 12px;
+  outline: none;
+}
+
+.urlInput:focus {
+  border-color: var(--accent, #7c6af5);
+}
+
+.btn {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btnPrimary {
+  background: var(--accent, #7c6af5);
+  color: #fff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #6a5ae0;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btnDanger {
+  background: #c0392b;
+  color: #fff;
+}
+
+.btnDanger:hover {
+  background: #a93226;
+}
+
+.errorBanner {
+  background: rgba(192, 57, 43, 0.15);
+  border: 1px solid rgba(192, 57, 43, 0.4);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #e74c3c;
+  font-size: 11px;
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted, #888);
+  text-align: center;
+  padding: 20px;
+}
+
+.hint {
+  color: var(--text-muted, #888);
+  font-size: 11px;
+}
+
+.previewActive {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(76, 175, 80, 0.06);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  border-radius: 4px;
+}
+
+.previewIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.previewIndicator a {
+  color: var(--accent, #7c6af5);
+  text-decoration: none;
+}
+
+.previewIndicator a:hover {
+  text-decoration: underline;
+}
+
+/* ── Instructions ────────────────────────────────────────────────────────── */
+.instructions {
+  background: rgba(124, 106, 245, 0.06);
+  border: 1px solid rgba(124, 106, 245, 0.2);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.instructionsTitle {
+  font-weight: 600;
+  color: var(--text-primary, #ccc);
+  margin: 0 0 8px 0;
+}
+
+.instructionsList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted, #aaa);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.instructionsList code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* ── Network Tab ─────────────────────────────────────────────────────────── */
+.networkTab {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.networkToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border, #333);
+  flex-shrink: 0;
+}
+
+.networkCount {
+  color: var(--text-muted, #888);
+  font-size: 11px;
+}
+
+.btnSmall {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border, #444);
+  border-radius: 3px;
+  color: var(--text-muted, #aaa);
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.btnSmall:hover {
+  color: var(--text-primary, #ccc);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.networkList {
+  flex: 1;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.networkRow {
+  display: grid;
+  grid-template-columns: 44px 40px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.networkRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.networkRowError {
+  color: #e74c3c;
+}
+
+.networkMethod {
+  color: #4fc3f7;
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.networkStatus {
+  color: #aaa;
+  text-align: right;
+}
+
+.networkUrl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary, #ccc);
+}
+
+.networkDuration {
+  color: var(--text-muted, #888);
+  white-space: nowrap;
+  font-size: 10px;
+}

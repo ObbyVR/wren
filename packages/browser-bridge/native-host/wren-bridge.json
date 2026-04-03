@@ -1,0 +1,9 @@
+{
+  "name": "com.wren.bridge",
+  "description": "Wren Nexus Bridge — native messaging host",
+  "path": "PLACEHOLDER_REPLACED_BY_INSTALL_SCRIPT",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://PLACEHOLDER_EXTENSION_ID/"
+  ]
+}

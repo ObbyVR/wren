@@ -136,6 +136,32 @@ export interface IpcChannelMap {
     request: void;
     response: string | null;
   };
+
+  // Browser Bridge (Nexus Bridge)
+  "bridge:open-preview": {
+    request: BridgeOpenPreviewPayload;
+    response: { wrenWindowId: string };
+  };
+  "bridge:close-preview": {
+    request: { wrenWindowId: string };
+    response: void;
+  };
+  "bridge:resize-preview": {
+    request: BridgeResizePayload;
+    response: void;
+  };
+  "bridge:navigate-preview": {
+    request: { wrenWindowId: string; url: string };
+    response: void;
+  };
+  "bridge:get-status": {
+    request: void;
+    response: BridgeStatus;
+  };
+  "bridge:list-windows": {
+    request: void;
+    response: BridgeWindowInfo[];
+  };
 }
 
 export type IpcRequest<C extends IpcChannel> = IpcChannelMap[C]["request"];
@@ -252,4 +278,46 @@ export interface ProjectInfo {
   openFiles: string[];
   aiProvider: string;
   model: string;
+}
+
+// ── Browser Bridge (Nexus Bridge) types ───────────────────────────────────────
+
+export interface BridgeOpenPreviewPayload {
+  wrenWindowId: string;
+  url: string;
+  width?: number;
+  height?: number;
+  left?: number;
+  top?: number;
+}
+
+export interface BridgeResizePayload {
+  wrenWindowId: string;
+  width?: number;
+  height?: number;
+  left?: number;
+  top?: number;
+}
+
+export interface BridgeWindowInfo {
+  wrenWindowId: string;
+  url: string;
+  status: "open" | "loading" | "closed";
+}
+
+export interface BridgeStatus {
+  connected: boolean;
+  windowCount: number;
+}
+
+export interface BridgeNetworkEvent {
+  requestId: string;
+  type: "request" | "response" | "error";
+  method: string;
+  url: string;
+  status?: number;
+  statusText?: string;
+  duration?: number;
+  error?: string;
+  timestamp: number;
 }
