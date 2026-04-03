@@ -7,6 +7,9 @@ import {
 } from "react";
 import ReactMarkdown from "react-markdown";
 import { KeySettings } from "./KeySettings";
+import { PROVIDER_META } from "../store/providerStore";
+import { useProjects } from "../store/projectStore";
+import { useCost } from "../store/costStore";
 import styles from "./ChatPanel.module.css";
 import type { AiModel } from "@wren/shared";
 
@@ -30,6 +33,9 @@ export function ChatPanel() {
   const [streaming, setStreaming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [lastUsage, setLastUsage] = useState<{ in: number; out: number } | null>(null);
+
+  const { activeProject } = useProjects();
+  const { recordUsage } = useCost();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -92,6 +98,17 @@ export function ChatPanel() {
       setLastUsage({ in: event.inputTokens, out: event.outputTokens });
       setStreaming(false);
       activeRequestId.current = null;
+
+      // Record cost
+      if (activeProject) {
+        recordUsage(
+          activeProject.id,
+          activeProject.name,
+          activeProject.providerId,
+          event.inputTokens,
+          event.outputTokens,
+        );
+      }
     });
 
     const offError = window.wren.onAiStreamError((event) => {
@@ -112,7 +129,8 @@ export function ChatPanel() {
       offDone();
       offError();
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProject]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -171,11 +189,30 @@ export function ChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, []);
 
+  const providerMeta = activeProject
+    ? PROVIDER_META[activeProject.providerId]
+    : null;
+
   return (
     <div className={styles.root}>
       {/* Toolbar */}
       <div className={styles.toolbar}>
         <span className={styles.toolbarLabel}>AI Chat</span>
+
+        {/* Provider badge */}
+        {providerMeta && (
+          <span
+            className={styles.providerBadge}
+            style={{
+              background: providerMeta.color + "22",
+              color: providerMeta.color,
+            }}
+            title={`Provider: ${providerMeta.name}`}
+          >
+            {providerMeta.name}
+          </span>
+        )}
+
         {models.length > 0 && (
           <select
             className={styles.modelSelect}
@@ -221,7 +258,7 @@ export function ChatPanel() {
               <span
                 className={`${styles.messageRole} ${msg.role === "assistant" ? styles.assistant : ""}`}
               >
-                {msg.role === "user" ? "You" : "Claude"}
+                {msg.role === "user" ? "You" : (providerMeta?.name ?? "Claude")}
               </span>
               <div className={styles.messageBody}>
                 {msg.role === "assistant" ? (
@@ -263,7 +300,7 @@ export function ChatPanel() {
           <textarea
             ref={textareaRef}
             className={styles.textarea}
-            placeholder={hasKey ? "Message Claude… (Enter to send)" : "Add API key to start chatting"}
+            placeholder={hasKey ? "Message… (Enter to send)" : "Add API key to start chatting"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onInput={handleInput}
