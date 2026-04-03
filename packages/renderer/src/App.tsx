@@ -4,6 +4,7 @@ import type { Layout } from "react-resizable-panels";
 import { FileTree } from "./components/FileTree";
 import { Editor } from "./components/Editor";
 import { Terminal } from "./components/Terminal";
+import { ChatPanel } from "./components/ChatPanel";
 import styles from "./App.module.css";
 
 const STORAGE_KEY_ROOT = "wren:rootPath";
@@ -24,6 +25,7 @@ export default function App() {
   );
   const [openFilePath, setOpenFilePath] = useState<string | null>(null);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(true);
 
   const handleFileOpen = useCallback((path: string) => {
     setOpenFilePath(path);
@@ -55,7 +57,7 @@ export default function App() {
         }
       >
         {/* Left: File Tree */}
-        <Panel defaultSize={20} minSize={12} maxSize={40}>
+        <Panel defaultSize={18} minSize={10} maxSize={35}>
           <FileTree
             rootPath={rootPath}
             activePath={activeFilePath}
@@ -66,8 +68,8 @@ export default function App() {
 
         <Separator className={styles.hHandle} />
 
-        {/* Center+Right: Editor + Terminal stacked vertically */}
-        <Panel defaultSize={80} minSize={40}>
+        {/* Center: Editor + Terminal stacked vertically */}
+        <Panel defaultSize={chatOpen ? 54 : 82} minSize={30}>
           <Group
             orientation="vertical"
             defaultLayout={loadLayout(STORAGE_KEY_LAYOUT_V)}
@@ -89,7 +91,27 @@ export default function App() {
             </Panel>
           </Group>
         </Panel>
+
+        {chatOpen && (
+          <>
+            <Separator className={styles.hHandle} />
+
+            {/* Right: AI Chat Panel */}
+            <Panel defaultSize={28} minSize={20} maxSize={50}>
+              <ChatPanel />
+            </Panel>
+          </>
+        )}
       </Group>
+
+      {/* Chat toggle button */}
+      <button
+        className={styles.chatToggle}
+        onClick={() => setChatOpen((v) => !v)}
+        title={chatOpen ? "Hide AI chat" : "Show AI chat"}
+      >
+        {chatOpen ? "✕" : "✦"}
+      </button>
     </div>
   );
 }
