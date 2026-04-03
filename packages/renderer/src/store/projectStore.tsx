@@ -3,11 +3,12 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
-import type { ProjectTab, ProviderId } from "@wren/shared";
+import type { ProjectTab, ProjectInfo, ProviderId } from "@wren/shared";
 
-// ── Default mock projects (until F2.1 IPC is merged) ─────────────────────────
+// ── Default mock projects (used if IPC unavailable) ───────────────────────────
 
 const STORAGE_KEY = "wren:projects";
 
@@ -30,6 +31,16 @@ function saveProjects(projects: ProjectTab[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
 }
 
+function projectInfoToTab(info: ProjectInfo): ProjectTab {
+  return {
+    id: info.id,
+    name: info.name,
+    rootPath: info.path || null,
+    providerId: (info.aiProvider as ProviderId) || "anthropic",
+    modelId: info.model,
+  };
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 interface ProjectContextValue {
@@ -38,6 +49,7 @@ interface ProjectContextValue {
   activeProject: ProjectTab | undefined;
   setActiveProject: (id: string) => void;
   addProject: (name: string, rootPath: string | null, providerId: ProviderId) => void;
+  openProjectFromDisk: () => Promise<void>;
   renameProject: (id: string, name: string) => void;
   setProjectProvider: (id: string, providerId: ProviderId, modelId?: string) => void;
   closeProject: (id: string) => void;
@@ -53,6 +65,21 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
 
+  // On mount, try to load persisted projects from main process
+  useEffect(() => {
+    void window.wren.invoke("project:list").then((list) => {
+      if (list.length > 0) {
+        const tabs = list.map(projectInfoToTab);
+        setProjects(tabs);
+        saveProjects(tabs);
+        setActiveProjectId((prev) =>
+          tabs.some((t) => t.id === prev) ? prev : (tabs[0]?.id ?? prev),
+        );
+      }
+    }).catch(() => { /* IPC not available (tests/storybook) */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const setActiveProject = useCallback((id: string) => {
     setActiveProjectId(id);
   }, []);
@@ -67,6 +94,39 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     },
     [projects],
   );
+
+  /** Open a real folder via the system dialog, then register with main process */
+  const openProjectFromDisk = useCallback(async () => {
+    let folderPath: string | null = null;
+    try {
+      folderPath = await window.wren.invoke("dialog:open-folder");
+    } catch {
+      // Fallback: use prompt in non-Electron contexts
+      folderPath = window.prompt("Enter folder path:") ?? null;
+    }
+    if (!folderPath?.trim()) return;
+
+    let projectInfo: ProjectInfo;
+    try {
+      projectInfo = await window.wren.invoke("project:open", { path: folderPath.trim() });
+    } catch {
+      // Fallback: create a local-only project
+      addProject(folderPath.trim().split("/").pop() ?? "Project", folderPath.trim(), "anthropic");
+      return;
+    }
+
+    const tab = projectInfoToTab(projectInfo);
+    setProjects((prev) => {
+      // Don't duplicate if already open
+      if (prev.some((p) => p.id === tab.id)) {
+        return prev;
+      }
+      const next = [...prev, tab];
+      saveProjects(next);
+      return next;
+    });
+    setActiveProjectId(tab.id);
+  }, [addProject]);
 
   const renameProject = useCallback(
     (id: string, name: string) => {
@@ -100,6 +160,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       if (activeProjectId === id) {
         setActiveProjectId(next[0]?.id ?? "");
       }
+      // Inform main process (fire and forget)
+      void window.wren.invoke("project:close", { id }).catch(() => {});
     },
     [projects, activeProjectId],
   );
@@ -112,6 +174,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         activeProject,
         setActiveProject,
         addProject,
+        openProjectFromDisk,
         renameProject,
         setProjectProvider,
         closeProject,

@@ -12,6 +12,7 @@ import { ProjectProvider, useProjects } from "./store/projectStore";
 import { ProviderProvider } from "./store/providerStore";
 import { CostProvider } from "./store/costStore";
 import styles from "./App.module.css";
+import type { ProjectTab } from "@wren/shared";
 
 const STORAGE_KEY_LAYOUT_H = "wren:layout:horizontal";
 const STORAGE_KEY_LAYOUT_V = "wren:layout:vertical";
@@ -24,17 +25,19 @@ function loadLayout(key: string): Layout | undefined {
   return undefined;
 }
 
-// ── Inner app (has access to context) ───────────────────────────────────────
+// ── Per-project workspace (keeps state alive while hidden) ───────────────────
 
-function AppInner() {
-  const { activeProject, renameProject } = useProjects();
+interface WorkspaceProps {
+  project: ProjectTab;
+  visible: boolean;
+  chatOpen: boolean;
+}
+
+function ProjectWorkspace({ project, visible, chatOpen }: WorkspaceProps) {
   const [openFilePath, setOpenFilePath] = useState<string | null>(null);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showCostDashboard, setShowCostDashboard] = useState(false);
 
-  const rootPath = activeProject?.rootPath ?? null;
+  const rootPath = project.rootPath ?? null;
   const termCwd = rootPath ?? "/";
 
   const handleFileOpen = useCallback((path: string) => {
@@ -47,39 +50,31 @@ function AppInner() {
   }, []);
 
   const handleOpenFolder = useCallback(async () => {
-    const path = window.prompt("Enter folder path:");
-    if (path && path.trim() && activeProject) {
-      const trimmed = path.trim();
-      renameProject(activeProject.id, activeProject.name); // keep name, just update path
-      // Update rootPath on the active project
-      localStorage.setItem("wren:rootPath", trimmed);
-      window.location.reload(); // simplest approach for now
-    }
-  }, [activeProject, renameProject]);
-
-  // Keyboard shortcut: Cmd+, for Settings
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (meta && e.key === ",") {
-        e.preventDefault();
-        setShowSettings((v) => !v);
+    // Per-project folder change — use dialog IPC if available
+    try {
+      const folderPath = await window.wren.invoke("dialog:open-folder");
+      if (folderPath) {
+        // Persist updated rootPath via IPC and reload project info
+        await window.wren.invoke("project:update", { id: project.id });
       }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+    } catch {
+      const path = window.prompt("Enter folder path:");
+      if (path?.trim()) {
+        localStorage.setItem("wren:rootPath", path.trim());
+      }
+    }
+  }, [project.id]);
 
   return (
-    <div className={styles.shell}>
-      {/* Tab bar at the top */}
-      <TabBar />
-
+    <div
+      className={styles.workspace}
+      style={{ display: visible ? "flex" : "none" }}
+    >
       <Group
         orientation="horizontal"
-        defaultLayout={loadLayout(STORAGE_KEY_LAYOUT_H)}
+        defaultLayout={loadLayout(`${STORAGE_KEY_LAYOUT_H}:${project.id}`)}
         onLayoutChange={(layout: Layout) =>
-          localStorage.setItem(STORAGE_KEY_LAYOUT_H, JSON.stringify(layout))
+          localStorage.setItem(`${STORAGE_KEY_LAYOUT_H}:${project.id}`, JSON.stringify(layout))
         }
       >
         {/* Left: File Tree */}
@@ -98,9 +93,9 @@ function AppInner() {
         <Panel defaultSize={chatOpen ? 54 : 82} minSize={30}>
           <Group
             orientation="vertical"
-            defaultLayout={loadLayout(STORAGE_KEY_LAYOUT_V)}
+            defaultLayout={loadLayout(`${STORAGE_KEY_LAYOUT_V}:${project.id}`)}
             onLayoutChange={(layout: Layout) =>
-              localStorage.setItem(STORAGE_KEY_LAYOUT_V, JSON.stringify(layout))
+              localStorage.setItem(`${STORAGE_KEY_LAYOUT_V}:${project.id}`, JSON.stringify(layout))
             }
           >
             <Panel defaultSize={70} minSize={20}>
@@ -121,14 +116,51 @@ function AppInner() {
         {chatOpen && (
           <>
             <Separator className={styles.hHandle} />
-
-            {/* Right: AI Chat Panel */}
             <Panel defaultSize={28} minSize={20} maxSize={50}>
               <ChatPanel />
             </Panel>
           </>
         )}
       </Group>
+    </div>
+  );
+}
+
+// ── Inner app (has access to context) ───────────────────────────────────────
+
+function AppInner() {
+  const { projects, activeProjectId } = useProjects();
+  const [chatOpen, setChatOpen] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showCostDashboard, setShowCostDashboard] = useState(false);
+
+  // Keyboard shortcut: Cmd+, for Settings
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key === ",") {
+        e.preventDefault();
+        setShowSettings((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  return (
+    <div className={styles.shell}>
+      {/* Tab bar at the top */}
+      <TabBar />
+
+      {/* Per-project workspaces — all mounted, only active visible */}
+      {projects.map((project) => (
+        <ProjectWorkspace
+          key={project.id}
+          project={project}
+          visible={project.id === activeProjectId}
+          chatOpen={chatOpen}
+        />
+      ))}
 
       {/* Bottom action bar */}
       <div className={styles.statusBar}>

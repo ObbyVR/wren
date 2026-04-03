@@ -22,7 +22,7 @@ export function TabBar() {
     projects,
     activeProjectId,
     setActiveProject,
-    addProject,
+    openProjectFromDisk,
     renameProject,
     setProjectProvider,
     closeProject,
@@ -69,12 +69,11 @@ export function TabBar() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, activeProjectId]);
+  }, [projects, activeProjectId, openProjectFromDisk]);
 
   const handleNewProject = useCallback(() => {
-    const name = `Project ${projects.length + 1}`;
-    addProject(name, null, "anthropic");
-  }, [projects.length, addProject]);
+    void openProjectFromDisk();
+  }, [openProjectFromDisk]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, projectId: string) => {
