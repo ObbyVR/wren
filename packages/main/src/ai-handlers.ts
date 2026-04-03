@@ -1,7 +1,8 @@
 import { type BrowserWindow, type IpcMainInvokeEvent } from "electron";
-import { ClaudeProvider } from "@wren/ai";
+import { ClaudeProvider, GeminiProvider, OpenAIProvider, transferContext } from "@wren/ai";
+import type { AIProvider } from "@wren/ai";
 import type { IpcChannelMap } from "@wren/shared";
-import { getKey, hasKey, removeKey, setKey } from "./key-store";
+import { getKey, hasKey, listAliases, removeKey, setKey, type ProviderId } from "./key-store";
 
 // Typed handle helper (mirrors pattern in index.ts)
 type TypedHandle = <C extends keyof IpcChannelMap>(
@@ -12,11 +13,32 @@ type TypedHandle = <C extends keyof IpcChannelMap>(
   ) => Promise<IpcChannelMap[C]["response"]> | IpcChannelMap[C]["response"]
 ) => void;
 
+const PROVIDER_NAMES: Record<ProviderId, string> = {
+  claude: "Anthropic Claude",
+  openai: "OpenAI",
+  gemini: "Google Gemini",
+};
+
+function buildProvider(providerId: ProviderId, key: string): AIProvider {
+  switch (providerId) {
+    case "openai":
+      return new OpenAIProvider(key);
+    case "gemini":
+      return new GeminiProvider(key);
+    case "claude":
+    default:
+      return new ClaudeProvider(key);
+  }
+}
+
+// In-memory project config store (persisted separately in production)
+const projectConfigs = new Map<string, { providerId: string; accountAlias: string; model: string }>();
+
 export function registerAiHandlers(
   handle: TypedHandle,
   getWindow: () => BrowserWindow | null
 ): void {
-  // ── Key management ──────────────────────────────────────────────────────────
+  // ── Legacy key management (Claude only, default alias — backwards compat) ────
 
   handle("ai:get-key-status", () => ({ hasKey: hasKey("claude") }));
 
@@ -48,25 +70,98 @@ export function registerAiHandlers(
     return provider.listModels();
   });
 
-  // ── Chat / streaming ────────────────────────────────────────────────────────
+  // ── Multi-provider management ────────────────────────────────────────────────
+
+  handle("ai:list-providers", async () => {
+    const providerIds: ProviderId[] = ["claude", "openai", "gemini"];
+    const result = [];
+    for (const pid of providerIds) {
+      const aliases = listAliases(pid);
+      let models: import("@wren/shared").AiModel[] = [];
+      if (aliases.length > 0) {
+        const key = getKey(pid, aliases[0]);
+        if (key) {
+          try {
+            models = await buildProvider(pid, key).listModels();
+          } catch {
+            // ignore — provider is configured but unreachable
+          }
+        }
+      }
+      result.push({ id: pid, name: PROVIDER_NAMES[pid], aliases, models });
+    }
+    return result;
+  });
+
+  handle("ai:set-provider", async (_event, { providerId, key, alias }) => {
+    const pid = providerId as ProviderId;
+    const provider = buildProvider(pid, key);
+    let valid: boolean;
+    try {
+      valid = await provider.validateKey(key);
+    } catch {
+      return { valid: false, error: "Network error while validating key" };
+    }
+    if (valid) {
+      setKey(pid, key, alias ?? "default");
+      return { valid: true };
+    }
+    return { valid: false, error: "Invalid API key (authentication failed)" };
+  });
+
+  handle("ai:validate-key", async (_event, { providerId, key }) => {
+    const pid = providerId as ProviderId;
+    const provider = buildProvider(pid, key);
+    let valid: boolean;
+    try {
+      valid = await provider.validateKey(key);
+    } catch {
+      return { valid: false, error: "Network error while validating key" };
+    }
+    return valid ? { valid: true } : { valid: false, error: "Invalid API key" };
+  });
+
+  handle("ai:remove-provider-key", (_event, { providerId, alias }) => {
+    removeKey(providerId as ProviderId, alias ?? "default");
+  });
+
+  // ── Context Bridge ────────────────────────────────────────────────────────────
+
+  handle("ai:transfer-context", (_event, { messages, fromProviderId, toProviderId }) => {
+    return transferContext(messages, fromProviderId, toProviderId);
+  });
+
+  // ── Project config ────────────────────────────────────────────────────────────
+
+  handle("project:get-config", (_event, { projectId }) => {
+    return projectConfigs.get(projectId) ?? null;
+  });
+
+  handle("project:set-config", (_event, { projectId, config }) => {
+    projectConfigs.set(projectId, config);
+  });
+
+  // ── Chat / streaming ─────────────────────────────────────────────────────────
 
   handle("ai:send-message", async (_event, payload) => {
     const { requestId, messages, model, systemPrompt } = payload;
+    const providerId = (payload.providerId ?? "claude") as ProviderId;
+    const accountAlias = payload.accountAlias ?? "default";
     const win = getWindow();
 
-    const key = getKey("claude");
+    const key = getKey(providerId, accountAlias);
     if (!key) {
       win?.webContents.send("ai:stream-error", {
         requestId,
-        error: "No API key configured. Please add your Anthropic API key in settings.",
+        error: `No API key configured for provider "${providerId}" (alias: ${accountAlias}). Please add your key in settings.`,
       });
       return;
     }
 
-    const provider = new ClaudeProvider(key);
+    const provider = buildProvider(providerId, key);
 
-    // Stream in background — don't await in the IPC handler so the renderer
-    // gets the response immediately and can start listening for chunks.
+    // Stream in background — don't await so the renderer gets the response
+    // immediately and can start listening for chunks.
     void (async () => {
       try {
         const usage = await provider.sendMessage(

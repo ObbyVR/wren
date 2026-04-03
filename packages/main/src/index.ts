@@ -1,9 +1,10 @@
-import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, type IpcMainInvokeEvent } from "electron";
 import path from "path";
 import fs from "fs/promises";
 import type { IpcChannelMap, FileEntry } from "@wren/shared";
 import type * as nodePtyTypes from "node-pty";
 import { registerAiHandlers } from "./ai-handlers";
+import { projectStore } from "./project-store";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -141,6 +142,33 @@ function registerHandlers(): void {
 
   // AI handlers
   registerAiHandlers(handle, () => mainWindow);
+
+  // Project management handlers
+  handle("project:open", (_event, { path: folderPath }) => {
+    return projectStore.open(folderPath);
+  });
+
+  handle("project:close", (_event, { id }) => {
+    projectStore.close(id);
+  });
+
+  handle("project:list", () => {
+    return projectStore.list();
+  });
+
+  handle("project:update", (_event, { id, activeFile, openFiles, model }) => {
+    return projectStore.update(id, {
+      ...(activeFile !== undefined ? { activeFile } : {}),
+      ...(openFiles !== undefined ? { openFiles } : {}),
+      ...(model !== undefined ? { model } : {}),
+    });
+  });
+
+  // System dialog handlers
+  handle("dialog:open-folder", async () => {
+    const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
+    return result.canceled ? null : (result.filePaths[0] ?? null);
+  });
 }
 
 app.whenReady().then(() => {
