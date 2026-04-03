@@ -10,14 +10,27 @@ import { KeySettings } from "./KeySettings";
 import { PROVIDER_META } from "../store/providerStore";
 import { useProjects } from "../store/projectStore";
 import { useCost } from "../store/costStore";
+import { useAgentic } from "../store/agenticStore";
 import styles from "./ChatPanel.module.css";
-import type { AiModel } from "@wren/shared";
+import type { AiModel, AiToolCall, AiToolResult } from "@wren/shared";
+
+interface ToolEvent {
+  kind: "tool_call" | "tool_result";
+  toolCall?: AiToolCall;
+  toolResult?: AiToolResult;
+}
 
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
+  toolEvents?: ToolEvent[];
+}
+
+function toolCallSummary(tc: AiToolCall): string {
+  const arg = Object.values(tc.input)[0];
+  return typeof arg === "string" ? arg : JSON.stringify(tc.input).slice(0, 80);
 }
 
 let msgCounter = 0;
@@ -36,6 +49,7 @@ export function ChatPanel() {
 
   const { activeProject } = useProjects();
   const { recordUsage } = useCost();
+  const { agenticEnabled, toggleAgentic, pendingApproval, settings } = useAgentic();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -124,10 +138,46 @@ export function ChatPanel() {
       activeRequestId.current = null;
     });
 
+    const offToolCall = window.wren.onAiStreamToolCall((event) => {
+      if (event.requestId !== activeRequestId.current) return;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === activeRequestId.current
+            ? {
+                ...msg,
+                toolEvents: [
+                  ...(msg.toolEvents ?? []),
+                  { kind: "tool_call" as const, toolCall: event.toolCall },
+                ],
+              }
+            : msg
+        )
+      );
+    });
+
+    const offToolResult = window.wren.onAiStreamToolResult((event) => {
+      if (event.requestId !== activeRequestId.current) return;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === activeRequestId.current
+            ? {
+                ...msg,
+                toolEvents: [
+                  ...(msg.toolEvents ?? []),
+                  { kind: "tool_result" as const, toolResult: event.toolResult },
+                ],
+              }
+            : msg
+        )
+      );
+    });
+
     return () => {
       offChunk();
       offDone();
       offError();
+      offToolCall();
+      offToolResult();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProject]);
@@ -147,6 +197,7 @@ export function ChatPanel() {
       role: "assistant",
       content: "",
       streaming: true,
+      toolEvents: [],
     };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
@@ -169,8 +220,14 @@ export function ChatPanel() {
       requestId,
       messages: history,
       model: selectedModel,
+      ...(agenticEnabled && activeProject?.rootPath
+        ? {
+            agenticMode: true,
+            projectRoot: activeProject.rootPath,
+          }
+        : {}),
     });
-  }, [input, streaming, selectedModel, hasKey, messages]);
+  }, [input, streaming, selectedModel, hasKey, messages, agenticEnabled, activeProject]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -234,7 +291,25 @@ export function ChatPanel() {
           <span className={`${styles.keyDot} ${hasKey ? styles.keyDotActive : ""}`} />
           Key
         </button>
+
+        {/* Agentic mode toggle */}
+        <button
+          className={`${styles.agenticBtn} ${agenticEnabled ? styles.agenticBtnActive : ""}`}
+          onClick={toggleAgentic}
+          title={agenticEnabled ? `Agentic mode ON (${settings.approvalMode}) — click to disable` : "Enable agentic mode"}
+        >
+          <span className={`${styles.agenticDot} ${agenticEnabled ? styles.agenticDotActive : ""}`} />
+          {agenticEnabled ? `Agent · ${settings.approvalMode}` : "Agent"}
+        </button>
       </div>
+
+      {/* Agentic pending indicator */}
+      {pendingApproval && (
+        <div className={styles.agenticPending}>
+          <span className={styles.agenticPendingDot} />
+          Waiting for approval…
+        </div>
+      )}
 
       {/* Messages */}
       <div className={styles.messages}>
@@ -263,8 +338,40 @@ export function ChatPanel() {
               <div className={styles.messageBody}>
                 {msg.role === "assistant" ? (
                   <>
+                    {/* Tool call/result events */}
+                    {msg.toolEvents && msg.toolEvents.length > 0 && (
+                      <div style={{ marginBottom: "0.4rem", display: "flex", flexDirection: "column", gap: "3px" }}>
+                        {msg.toolEvents.map((ev, i) => {
+                          if (ev.kind === "tool_call" && ev.toolCall) {
+                            return (
+                              <div key={i} className={styles.toolCallRow}>
+                                <span className={styles.toolCallIcon}>⚙️</span>
+                                <div>
+                                  <span className={styles.toolCallName}>{ev.toolCall.name}</span>
+                                  {" "}
+                                  <span className={styles.toolCallArg}>{toolCallSummary(ev.toolCall)}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          if (ev.kind === "tool_result" && ev.toolResult) {
+                            const preview = ev.toolResult.output.slice(0, 100);
+                            return (
+                              <div key={i} className={`${styles.toolCallRow} ${ev.toolResult.isError ? styles.toolCallError : ""}`}>
+                                <span className={styles.toolCallIcon}>{ev.toolResult.isError ? "❌" : "✓"}</span>
+                                <div>
+                                  <span className={styles.toolCallName}>{ev.toolResult.name}</span>
+                                  <div className={styles.toolCallResult}>{preview}{ev.toolResult.output.length > 100 ? "…" : ""}</div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    {msg.streaming && msg.content === "" && (
+                    {msg.streaming && msg.content === "" && (msg.toolEvents?.length ?? 0) === 0 && (
                       <div className={styles.thinkingRow}>
                         <span className={styles.dots}>
                           <span>•</span>
@@ -272,6 +379,9 @@ export function ChatPanel() {
                           <span>•</span>
                         </span>
                       </div>
+                    )}
+                    {msg.streaming && msg.content === "" && (msg.toolEvents?.length ?? 0) > 0 && (
+                      <span className={styles.cursor} />
                     )}
                     {msg.streaming && msg.content !== "" && (
                       <span className={styles.cursor} />

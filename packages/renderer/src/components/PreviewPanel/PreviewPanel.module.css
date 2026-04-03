@@ -316,3 +316,38 @@
   white-space: nowrap;
   font-size: 10px;
 }
+
+/* ── Hot-reload indicator ───────────────────────────────────────────────────── */
+
+.refreshingBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  background: #141a2a;
+  border: 1px solid #1e2a4a;
+  border-radius: 5px;
+  margin: 0.5rem;
+  font-size: 0.72rem;
+  color: #6ea8d6;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.refreshingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6ea8d6;
+  flex-shrink: 0;
+  animation: refreshPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes refreshPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}

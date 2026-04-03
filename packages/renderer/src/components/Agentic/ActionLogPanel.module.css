@@ -1,0 +1,186 @@
+.panel {
+  background: #13131e;
+  border-top: 1px solid #2a2a3a;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panelClosed {
+  /* collapsed — just the header row */
+}
+
+.panelOpen {
+  /* expanded */
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  color: #9999bb;
+  font-size: 0.75rem;
+  transition: background 0.1s;
+}
+
+.header:hover {
+  background: #1e1e2a;
+}
+
+.headerIcon {
+  font-size: 0.85rem;
+}
+
+.headerTitle {
+  font-weight: 600;
+  color: #c0c0d8;
+}
+
+.badge {
+  background: #2a2a4a;
+  color: #8888cc;
+  border-radius: 10px;
+  padding: 0 0.4rem;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.chevron {
+  margin-left: auto;
+  font-size: 0.6rem;
+  color: #555566;
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  gap: 0.5rem;
+  border-bottom: 1px solid #1e1e2e;
+}
+
+.count {
+  font-size: 0.7rem;
+  color: #555566;
+}
+
+.toolbarActions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.btnSmall {
+  background: #1e1e2e;
+  border: 1px solid #2a2a3e;
+  color: #9999bb;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+
+.btnSmall:hover { opacity: 0.8; }
+
+.btnSmallDanger {
+  composes: btnSmall;
+  color: #e05c5c;
+  border-color: #5a2a2a;
+  background: #1e1414;
+}
+
+/* ── List ────────────────────────────────────────────────────────────────────── */
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 180px;
+}
+
+.empty {
+  font-size: 0.72rem;
+  color: #444455;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+/* ── Row ─────────────────────────────────────────────────────────────────────── */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.75rem;
+  border-bottom: 1px solid #1a1a28;
+  font-size: 0.72rem;
+  color: #9090b0;
+  cursor: default;
+  transition: background 0.1s;
+}
+
+.row:hover {
+  background: #1a1a28;
+}
+
+.rowError {
+  color: #c06060;
+}
+
+.rowRollback {
+  color: #6ea8d6;
+  font-style: italic;
+}
+
+.rowIcon {
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.rowLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.rowTime {
+  color: #444455;
+  flex-shrink: 0;
+  font-size: 0.66rem;
+}
+
+.rowStatus {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-weight: 600;
+  width: 1.8rem;
+  text-align: right;
+}
+
+.statusOk {
+  color: #34d07b;
+}
+
+.statusError {
+  color: #e05c5c;
+}

@@ -264,3 +264,148 @@
   padding: 2px 0.75rem 4px;
   text-align: right;
 }
+
+/* ── Agentic toggle ────────────────────────────────────────────────────────── */
+
+.agenticToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.agenticToggle:hover {
+  background: var(--bg-tab);
+  color: var(--text-primary);
+}
+
+.agenticToggleActive {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* ── Tool call inline messages ────────────────────────────────────────────── */
+
+.toolCallRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  background: var(--bg-tab);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.toolCallIcon {
+  flex-shrink: 0;
+  font-size: 12px;
+  margin-top: 1px;
+}
+
+.toolCallName {
+  font-weight: 600;
+  font-family: var(--font-code);
+  color: var(--text-primary);
+}
+
+.toolCallArg {
+  font-family: var(--font-code);
+  font-size: 10px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.toolCallResult {
+  font-family: var(--font-code);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.toolCallError {
+  color: #e06c75;
+}
+
+/* ── Agentic mode toggle ────────────────────────────────────────────────────── */
+
+.agenticBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  background: transparent;
+  border: 1px solid #2a2a3e;
+  border-radius: 5px;
+  color: #666677;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.agenticBtn:hover {
+  border-color: #3a3a5a;
+  color: #9999bb;
+}
+
+.agenticBtnActive {
+  border-color: #3a5a3a;
+  color: #34d07b;
+  background: #0d1a0d;
+}
+
+.agenticDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #333344;
+  flex-shrink: 0;
+}
+
+.agenticDotActive {
+  background: #34d07b;
+  box-shadow: 0 0 4px #34d07b88;
+  animation: agenticPulse 2s ease-in-out infinite;
+}
+
+@keyframes agenticPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* Pending approval indicator inside ChatPanel */
+.agenticPending {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: #1a1400;
+  border-bottom: 1px solid #3a3000;
+  font-size: 0.72rem;
+  color: #d4a800;
+}
+
+.agenticPendingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d4a800;
+  flex-shrink: 0;
+  animation: agenticPulse 0.8s ease-in-out infinite;
+}

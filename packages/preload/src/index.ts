@@ -6,6 +6,8 @@ import type {
   AiStreamChunkEvent,
   AiStreamDoneEvent,
   AiStreamErrorEvent,
+  AiStreamToolCallEvent,
+  AiStreamToolResultEvent,
   BridgeStatus,
   BridgeNetworkEvent,
   AgenticApprovalRequest,
@@ -125,6 +127,22 @@ const wrenApi = {
     };
     ipcRenderer.on("ai:stream-error", handler);
     return () => ipcRenderer.removeListener("ai:stream-error", handler);
+  },
+
+  onAiStreamToolCall: (callback: (event: AiStreamToolCallEvent) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: AiStreamToolCallEvent) => {
+      callback(data);
+    };
+    ipcRenderer.on("ai:stream-tool-call", handler);
+    return () => ipcRenderer.removeListener("ai:stream-tool-call", handler);
+  },
+
+  onAiStreamToolResult: (callback: (event: AiStreamToolResultEvent) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: AiStreamToolResultEvent) => {
+      callback(data);
+    };
+    ipcRenderer.on("ai:stream-tool-result", handler);
+    return () => ipcRenderer.removeListener("ai:stream-tool-result", handler);
   },
 
   // Agentic push events: main → renderer

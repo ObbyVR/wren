@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { BridgeStatus } from "@wren/shared";
+import { useProjects } from "../../store/projectStore";
 import styles from "./PreviewPanel.module.css";
 
 interface NetworkEntry {
@@ -25,6 +26,11 @@ export function PreviewPanel() {
   const [networkLog, setNetworkLog] = useState<NetworkEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"preview" | "network">("preview");
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { activeProject } = useProjects();
+  const isOpenRef = useRef(false);
+  isOpenRef.current = isOpen;
 
   const cleanupRef = useRef<(() => void)[]>([]);
 
@@ -80,6 +86,39 @@ export function PreviewPanel() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Hot reload: trigger preview refresh when agentic engine writes a file ────
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const projectId = activeProject?.id;
+    if (!projectId) return;
+
+    const unsub = window.wren.onAgenticActionDone(({ projectId: pid, action }) => {
+      if (pid !== projectId) return;
+      // Only trigger reload for file mutations
+      if (action.type !== "writeFile" && action.type !== "deleteFile") return;
+      if (action.status !== "success") return;
+      if (!isOpenRef.current) return;
+
+      // Debounce rapid sequences
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setIsRefreshing(true);
+        void window.wren
+          .invoke("bridge:reload-preview", { wrenWindowId: WREN_WINDOW_ID })
+          .catch(() => {})
+          .finally(() => setTimeout(() => setIsRefreshing(false), 800));
+      }, 300);
+    });
+
+    return () => {
+      unsub();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [activeProject?.id]);
+
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -226,6 +265,12 @@ export function PreviewPanel() {
                 <span className={styles.dotConnected} />
                 Preview open: <a href={url} target="_blank" rel="noreferrer">{url}</a>
               </div>
+              {isRefreshing && (
+                <div className={styles.refreshingBanner}>
+                  <span className={styles.refreshingDot} />
+                  Refreshing…
+                </div>
+              )}
               <p className={styles.hint}>The preview runs in a Chrome popup window outside Wren. Network events are captured below.</p>
             </div>
           )}

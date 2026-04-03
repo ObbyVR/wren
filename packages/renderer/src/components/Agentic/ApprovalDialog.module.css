@@ -1,0 +1,122 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 1.5rem;
+  pointer-events: none;
+}
+
+.dialog {
+  pointer-events: all;
+  background: #1e1e2a;
+  border: 1px solid #3a3a4e;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  min-width: 360px;
+  max-width: 560px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  animation: slideUp 0.15s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e4e4f0;
+}
+
+.target {
+  font-size: 0.75rem;
+  color: #8888aa;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.diff {
+  background: #13131e;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: #b0b0c8;
+  overflow-x: auto;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 0.875rem;
+  white-space: pre;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.4rem 0.85rem;
+  transition: opacity 0.1s;
+}
+
+button:hover { opacity: 0.85; }
+button:active { opacity: 0.7; }
+
+.btnReject {
+  composes: button;
+  background: #3a1e1e;
+  color: #e05c5c;
+  border: 1px solid #5a2a2a;
+}
+
+.btnApproveAll {
+  composes: button;
+  background: #1e2a3a;
+  color: #6ea8d6;
+  border: 1px solid #2a3a5a;
+}
+
+.btnApprove {
+  composes: button;
+  background: #1e3a2a;
+  color: #34d07b;
+  border: 1px solid #2a5a3a;
+}
+
+.hint {
+  font-size: 0.68rem;
+  color: #555566;
+  text-align: right;
+  margin: 0.5rem 0 0;
+}
