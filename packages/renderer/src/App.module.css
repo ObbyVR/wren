@@ -99,3 +99,36 @@
   color: var(--accent);
   background: var(--bg-tab);
 }
+
+/* ── Agentic indicator in status bar ────────────────────────────────────────── */
+
+.agenticIndicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 100%;
+  font-size: 11px;
+  color: #34d07b;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.12s;
+}
+
+.agenticIndicator:hover {
+  background: var(--bg-tab);
+}
+
+.agenticIndicatorDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #34d07b;
+  box-shadow: 0 0 4px #34d07b88;
+  animation: agenticStatusPulse 2s ease-in-out infinite;
+}
+
+@keyframes agenticStatusPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

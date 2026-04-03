@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useProviders, PROVIDER_META } from "../../store/providerStore";
 import { useProjects } from "../../store/projectStore";
-import type { ProviderId, ProviderConfig } from "@wren/shared";
+import { useAgentic } from "../../store/agenticStore";
+import type { ProviderId, ProviderConfig, ApprovalMode } from "@wren/shared";
 import styles from "./SettingsPanel.module.css";
 
-type Section = "providers" | "appearance" | "shortcuts" | "about";
+type Section = "providers" | "agentic" | "appearance" | "shortcuts" | "about";
 
 const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "ollama"];
 
@@ -157,6 +158,7 @@ export function SettingsPanel({ onClose }: Props) {
   const { providers, getProvider, setProviderKey, removeProviderKey, setProviderStatus } =
     useProviders();
   const { projects, activeProject, setProjectProvider } = useProjects();
+  const { settings, updateSettings } = useAgentic();
 
   // Sync legacy Anthropic key from existing KeySettings flow
   useEffect(() => {
@@ -226,7 +228,7 @@ export function SettingsPanel({ onClose }: Props) {
         {/* Sidebar */}
         <nav className={styles.sidebar}>
           <p className={styles.sidebarTitle}>Settings</p>
-          {(["providers", "appearance", "shortcuts", "about"] as Section[]).map((s) => (
+          {(["providers", "agentic", "appearance", "shortcuts", "about"] as Section[]).map((s) => (
             <button
               key={s}
               className={`${styles.navItem} ${section === s ? styles.navItemActive : ""}`}
@@ -289,6 +291,64 @@ export function SettingsPanel({ onClose }: Props) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {section === "agentic" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Agentic Mode</h2>
+              <p className={styles.sectionDesc}>
+                Configure how the AI can take autonomous actions in your projects.
+              </p>
+
+              <div className={styles.formRow}>
+                <label className={styles.formLabel}>Approval mode</label>
+                <select
+                  className={styles.formSelect}
+                  value={settings.approvalMode}
+                  onChange={(e) => updateSettings({ approvalMode: e.target.value as ApprovalMode })}
+                >
+                  <option value="manual">Manual — approve every action</option>
+                  <option value="selective">Selective — approve writes &amp; deletes</option>
+                  <option value="auto">Auto — approve all actions</option>
+                </select>
+              </div>
+
+              <div className={styles.formRow}>
+                <label className={styles.formLabel}>Max actions / session</label>
+                <input
+                  className={styles.formInput}
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={settings.maxActionsPerSession}
+                  onChange={(e) =>
+                    updateSettings({ maxActionsPerSession: Number(e.target.value) })
+                  }
+                />
+              </div>
+
+              <div className={styles.formRow}>
+                <label className={styles.formLabel}>Auto-snapshot</label>
+                <label className={styles.toggle}>
+                  <input
+                    type="checkbox"
+                    checked={settings.autoSnapshot}
+                    onChange={(e) => updateSettings({ autoSnapshot: e.target.checked })}
+                  />
+                  <span className={styles.toggleSlider} />
+                  <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#9090b0" }}>
+                    Save a snapshot before each write/delete (enables undo)
+                  </span>
+                </label>
+              </div>
+
+              <div className={styles.sectionDesc} style={{ marginTop: "1rem" }}>
+                <strong>Approval modes:</strong><br />
+                <em>Manual</em> — a dialog appears before every action.<br />
+                <em>Selective</em> — only file writes and deletes require approval; reads and list are automatic.<br />
+                <em>Auto</em> — the AI acts freely without interruptions.
+              </div>
             </div>
           )}
 

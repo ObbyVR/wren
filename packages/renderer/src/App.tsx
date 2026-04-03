@@ -9,9 +9,11 @@ import { TabBar } from "./components/TabBar";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
 import { CostDashboard } from "./components/CostDashboard/CostDashboard";
 import { PreviewPanel } from "./components/PreviewPanel";
+import { ApprovalDialog, ActionLogPanel } from "./components/Agentic";
 import { ProjectProvider, useProjects } from "./store/projectStore";
 import { ProviderProvider } from "./store/providerStore";
 import { CostProvider } from "./store/costStore";
+import { AgenticProvider, useAgentic } from "./store/agenticStore";
 import styles from "./App.module.css";
 import type { ProjectTab } from "@wren/shared";
 
@@ -141,10 +143,12 @@ function ProjectWorkspace({ project, visible, chatOpen, previewOpen }: Workspace
 
 function AppInner() {
   const { projects, activeProjectId } = useProjects();
+  const { agenticEnabled, actionLog } = useAgentic();
   const [chatOpen, setChatOpen] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showCostDashboard, setShowCostDashboard] = useState(false);
+  const [actionLogOpen, setActionLogOpen] = useState(false);
 
   // Keyboard shortcut: Cmd+, for Settings
   useEffect(() => {
@@ -175,6 +179,9 @@ function AppInner() {
         />
       ))}
 
+      {/* Action log panel — collapsible strip above the status bar */}
+      <ActionLogPanel isOpen={actionLogOpen} onToggle={() => setActionLogOpen((v) => !v)} />
+
       {/* Bottom action bar */}
       <div className={styles.statusBar}>
         <button
@@ -192,6 +199,17 @@ function AppInner() {
           $ Cost
         </button>
         <span className={styles.statusSpacer} />
+        {/* Agentic mode indicator in status bar */}
+        {agenticEnabled && (
+          <span
+            className={styles.agenticIndicator}
+            title={`Agentic mode active · ${actionLog.length} actions`}
+            onClick={() => setActionLogOpen((v) => !v)}
+          >
+            <span className={styles.agenticIndicatorDot} />
+            Agent{actionLog.length > 0 ? ` · ${actionLog.length}` : ""}
+          </span>
+        )}
         <button
           className={styles.statusBtn}
           onClick={() => setPreviewOpen((v) => !v)}
@@ -208,6 +226,9 @@ function AppInner() {
         </button>
       </div>
 
+      {/* Approval dialog — floats above everything */}
+      <ApprovalDialog />
+
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showCostDashboard && <CostDashboard onClose={() => setShowCostDashboard(false)} />}
     </div>
@@ -221,7 +242,9 @@ export default function App() {
     <ProjectProvider>
       <ProviderProvider>
         <CostProvider>
-          <AppInner />
+          <AgenticProvider>
+            <AppInner />
+          </AgenticProvider>
         </CostProvider>
       </ProviderProvider>
     </ProjectProvider>
