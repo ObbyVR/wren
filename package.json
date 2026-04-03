@@ -25,6 +25,7 @@
     "electron": "^33.3.1",
     "electron-builder": "^25.1.8",
     "eslint": "^9.21.0",
+    "globals": "^17.4.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3"
   }

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
 import path from "path";
 import type { IpcChannelMap } from "@wren/shared";
 
@@ -34,7 +34,7 @@ function registerHandlers(): void {
   const handle = <C extends keyof IpcChannelMap>(
     channel: C,
     handler: (
-      event: Electron.IpcMainInvokeEvent,
+      event: IpcMainInvokeEvent,
       payload: IpcChannelMap[C]["request"],
     ) => Promise<IpcChannelMap[C]["response"]> | IpcChannelMap[C]["response"],
   ) => {
