@@ -3,6 +3,7 @@ import { ClaudeProvider, GeminiProvider, OpenAIProvider, transferContext } from 
 import type { AIProvider } from "@wren/ai";
 import type { IpcChannelMap } from "@wren/shared";
 import { getKey, hasKey, listAliases, removeKey, setKey, type ProviderId } from "./key-store";
+import { buildAgenticSystemPrompt, executeAgenticLoop } from "./agentic-engine";
 
 // Typed handle helper (mirrors pattern in index.ts)
 type TypedHandle = <C extends keyof IpcChannelMap>(
@@ -144,7 +145,7 @@ export function registerAiHandlers(
   // ── Chat / streaming ─────────────────────────────────────────────────────────
 
   handle("ai:send-message", async (_event, payload) => {
-    const { requestId, messages, model, systemPrompt } = payload;
+    const { requestId, messages, model, systemPrompt, agenticMode, projectRoot, openFiles } = payload;
     const providerId = (payload.providerId ?? "claude") as ProviderId;
     const accountAlias = payload.accountAlias ?? "default";
     const win = getWindow();
@@ -164,21 +165,44 @@ export function registerAiHandlers(
     // immediately and can start listening for chunks.
     void (async () => {
       try {
-        const usage = await provider.sendMessage(
-          messages,
-          { model, ...(systemPrompt !== undefined ? { systemPrompt } : {}), maxTokens: 4096 },
-          (chunk) => {
-            win?.webContents.send("ai:stream-chunk", {
-              requestId,
-              text: chunk.text,
-            });
-          }
-        );
-        win?.webContents.send("ai:stream-done", {
-          requestId,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-        });
+        let resolvedSystemPrompt = systemPrompt;
+
+        if (agenticMode && projectRoot) {
+          // Build context-injected system prompt for agentic mode
+          resolvedSystemPrompt = await buildAgenticSystemPrompt(
+            projectRoot,
+            openFiles ?? []
+          );
+          const usage = await executeAgenticLoop(
+            requestId,
+            messages,
+            provider,
+            { model, systemPrompt: resolvedSystemPrompt, maxTokens: 4096 },
+            projectRoot,
+            win
+          );
+          win?.webContents.send("ai:stream-done", {
+            requestId,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+          });
+        } else {
+          // Normal (non-agentic) streaming
+          const usage = await provider.sendMessage(
+            messages,
+            { model, ...(resolvedSystemPrompt !== undefined ? { systemPrompt: resolvedSystemPrompt } : {}), maxTokens: 4096 },
+            (chunk) => {
+              if (chunk.type === "text") {
+                win?.webContents.send("ai:stream-chunk", { requestId, text: chunk.text });
+              }
+            }
+          );
+          win?.webContents.send("ai:stream-done", {
+            requestId,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+          });
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Unknown error during streaming";

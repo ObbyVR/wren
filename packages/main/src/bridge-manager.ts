@@ -106,6 +106,10 @@ export class BridgeManager {
     this.sendToExtension({ type: "navigate-preview", wrenWindowId, url });
   }
 
+  reloadPreview(wrenWindowId: string): void {
+    this.sendToExtension({ type: "reload-preview", wrenWindowId });
+  }
+
   getStatus(): BridgeStatus {
     return {
       connected: this.extensionSocket !== null,

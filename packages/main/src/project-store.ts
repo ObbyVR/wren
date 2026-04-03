@@ -2,7 +2,7 @@ import { app } from "electron";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import type { ProjectInfo } from "@wren/shared";
+import type { ProjectInfo, ApprovalMode } from "@wren/shared";
 
 const PROJECTS_FILE = path.join(app.getPath("userData"), "wren-projects.json");
 
@@ -14,6 +14,7 @@ interface PersistedProject {
   openFiles: string[];
   aiProvider: string;
   model: string;
+  approvalMode: ApprovalMode;
 }
 
 function readPersisted(): PersistedProject[] {
@@ -42,7 +43,7 @@ class ProjectStore {
     // Restore previously open projects on startup
     const persisted = readPersisted();
     for (const p of persisted) {
-      this.projects.set(p.id, { ...p });
+      this.projects.set(p.id, { ...p, approvalMode: p.approvalMode ?? "selective" });
     }
   }
 
@@ -69,6 +70,7 @@ class ProjectStore {
       openFiles: [],
       aiProvider: "anthropic",
       model: "claude-opus-4-6",
+      approvalMode: "selective",
     };
 
     this.projects.set(project.id, project);
@@ -81,7 +83,7 @@ class ProjectStore {
     this.persist();
   }
 
-  update(id: string, patch: Partial<Pick<ProjectInfo, "activeFile" | "openFiles" | "model">>): ProjectInfo {
+  update(id: string, patch: Partial<Pick<ProjectInfo, "activeFile" | "openFiles" | "model" | "approvalMode">>): ProjectInfo {
     const existing = this.projects.get(id);
     if (!existing) throw new Error(`Project ${id} not found`);
     const updated: ProjectInfo = { ...existing, ...patch };

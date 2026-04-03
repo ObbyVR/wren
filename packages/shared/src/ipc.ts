@@ -2,6 +2,68 @@
 
 export type IpcChannel = keyof IpcChannelMap;
 
+// ── Agentic Engine types ───────────────────────────────────────────────────────
+
+export type ApprovalMode = "manual" | "auto" | "selective";
+
+export type AgenticActionType =
+  | "readFile"
+  | "writeFile"
+  | "deleteFile"
+  | "runCommand"
+  | "listDir"
+  | "rollback";
+
+export interface AgenticAction {
+  id: string;
+  type: AgenticActionType;
+  path?: string;
+  command?: string;
+  snapshotId?: string;
+  status: "success" | "error";
+  error?: string;
+  timestamp: number;
+}
+
+export interface AgenticSnapshot {
+  id: string;
+  type: "writeFile" | "deleteFile";
+  path: string;
+  /** Original file content; null means the file did not exist before the action */
+  originalContent: string | null;
+  timestamp: number;
+}
+
+export interface AgenticRunCommandResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
+/** Emitted by main → renderer when an action needs user approval */
+export interface AgenticApprovalRequest {
+  requestId: string;
+  projectId: string;
+  action: AgenticActionType;
+  path?: string;
+  command?: string;
+  /** Unified diff for writeFile actions */
+  diff?: string;
+}
+
+/** Push event emitted by main → renderer when an action completes */
+export interface AgenticActionDoneEvent {
+  projectId: string;
+  action: AgenticAction;
+}
+
+/** Settings stored per project for the agentic engine */
+export interface AgenticSettings {
+  approvalMode: ApprovalMode;
+  maxActionsPerSession: number;
+  autoSnapshot: boolean;
+}
+
 export interface FileEntry {
   name: string;
   path: string;
@@ -137,6 +199,84 @@ export interface IpcChannelMap {
     response: string | null;
   };
 
+  // Agentic Engine — file actions
+  "agentic:readFile": {
+    request: { projectId: string; path: string };
+    response: string;
+  };
+  "agentic:writeFile": {
+    request: { projectId: string; path: string; content: string };
+    response: { snapshotId: string };
+  };
+  "agentic:deleteFile": {
+    request: { projectId: string; path: string };
+    response: { snapshotId: string };
+  };
+  "agentic:runCommand": {
+    request: { projectId: string; command: string; cwd?: string };
+    response: AgenticRunCommandResult;
+  };
+  "agentic:listDir": {
+    request: { projectId: string; path: string };
+    response: FileEntry[];
+  };
+
+  // Agentic Engine — rollback
+  "agentic:rollback": {
+    request: { projectId: string };
+    response: { snapshotId: string; path: string };
+  };
+  "agentic:rollbackTo": {
+    request: { projectId: string; snapshotId: string };
+    response: { restoredCount: number };
+  };
+
+  // Agentic Engine — log
+  "agentic:get-log": {
+    request: { projectId: string };
+    response: AgenticAction[];
+  };
+  "agentic:clear-log": {
+    request: { projectId: string };
+    response: void;
+  };
+
+  // Agentic Engine — approval mode
+  "agentic:get-approval-mode": {
+    request: { projectId: string };
+    response: ApprovalMode;
+  };
+  "agentic:set-approval-mode": {
+    request: { projectId: string; mode: ApprovalMode };
+    response: void;
+  };
+
+  // Agentic Engine — approve / reject a pending action
+  "agentic:approve": {
+    request: { requestId: string; projectId: string };
+    response: void;
+  };
+  "agentic:reject": {
+    request: { requestId: string; projectId: string };
+    response: void;
+  };
+
+  // Agentic Engine — settings (approval mode + safety limits)
+  "agentic:get-settings": {
+    request: { projectId: string };
+    response: AgenticSettings;
+  };
+  "agentic:set-settings": {
+    request: { projectId: string; settings: Partial<AgenticSettings> };
+    response: AgenticSettings;
+  };
+
+  // Browser Bridge — reload current preview page
+  "bridge:reload-preview": {
+    request: { wrenWindowId: string };
+    response: void;
+  };
+
   // Browser Bridge (Nexus Bridge)
   "bridge:open-preview": {
     request: BridgeOpenPreviewPayload;
@@ -187,6 +327,9 @@ export interface AiSendMessagePayload {
   providerId?: string; // which provider to use; falls back to "claude" for compat
   accountAlias?: string; // which key alias to use; falls back to "default"
   systemPrompt?: string;
+  agenticMode?: boolean;  // enables tool use + context injection
+  projectRoot?: string;   // project root path for context injection & tool execution
+  openFiles?: string[];   // currently open files to inject into context
 }
 
 export interface AiStreamChunkEvent {
@@ -203,6 +346,33 @@ export interface AiStreamDoneEvent {
 export interface AiStreamErrorEvent {
   requestId: string;
   error: string;
+}
+
+// ── Agentic / tool-use stream events ─────────────────────────────────────────
+
+export interface AiToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface AiToolResult {
+  toolCallId: string;
+  name: string;
+  output: string;
+  isError?: boolean;
+}
+
+/** Emitted when the AI has issued a tool call and Wren is executing it */
+export interface AiStreamToolCallEvent {
+  requestId: string;
+  toolCall: AiToolCall;
+}
+
+/** Emitted when a tool execution has completed */
+export interface AiStreamToolResultEvent {
+  requestId: string;
+  toolResult: AiToolResult;
 }
 
 // ── Multi-provider types ──────────────────────────────────────────────────────
@@ -278,6 +448,7 @@ export interface ProjectInfo {
   openFiles: string[];
   aiProvider: string;
   model: string;
+  approvalMode: ApprovalMode;
 }
 
 // ── Browser Bridge (Nexus Bridge) types ───────────────────────────────────────

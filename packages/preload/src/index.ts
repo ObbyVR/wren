@@ -8,6 +8,8 @@ import type {
   AiStreamErrorEvent,
   BridgeStatus,
   BridgeNetworkEvent,
+  AgenticApprovalRequest,
+  AgenticActionDoneEvent,
 } from "@wren/shared";
 
 const wrenApi = {
@@ -123,6 +125,27 @@ const wrenApi = {
     };
     ipcRenderer.on("ai:stream-error", handler);
     return () => ipcRenderer.removeListener("ai:stream-error", handler);
+  },
+
+  // Agentic push events: main → renderer
+  onAgenticApprovalRequest: (
+    callback: (data: AgenticApprovalRequest) => void,
+  ): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: AgenticApprovalRequest) => {
+      callback(data);
+    };
+    ipcRenderer.on("agentic:approval-request", handler);
+    return () => ipcRenderer.removeListener("agentic:approval-request", handler);
+  },
+
+  onAgenticActionDone: (
+    callback: (data: AgenticActionDoneEvent) => void,
+  ): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: AgenticActionDoneEvent) => {
+      callback(data);
+    };
+    ipcRenderer.on("agentic:action-done", handler);
+    return () => ipcRenderer.removeListener("agentic:action-done", handler);
   },
 };
 

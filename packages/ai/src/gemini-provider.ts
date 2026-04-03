@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { AiMessage, AiModel } from "@wren/shared";
-import type { AIProvider, ChatOptions, StreamChunk, UsageStats } from "./types";
+import type { AIProvider, ChatOptions, ProviderChunk, UsageStats } from "./types";
+import { toGeminiTools } from "./tools";
 
 const GEMINI_MODELS: AiModel[] = [
   { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", providerId: "gemini" },
@@ -20,11 +21,20 @@ export class GeminiProvider implements AIProvider {
   async sendMessage(
     messages: AiMessage[],
     options: ChatOptions,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (chunk: ProviderChunk) => void
   ): Promise<UsageStats> {
+    // Cast is required because toGeminiTools returns plain objects while the
+    // Gemini SDK expects FunctionDeclarationSchema with strict required fields.
+    // At runtime the schema objects are compatible.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const geminiTools = options.tools?.length
+      ? ([{ functionDeclarations: toGeminiTools(options.tools) }] as any)
+      : undefined;
+
     const model = this.client.getGenerativeModel({
       model: options.model,
       ...(options.systemPrompt ? { systemInstruction: options.systemPrompt } : {}),
+      ...(geminiTools ? { tools: geminiTools } : {}),
     });
 
     // Gemini uses history + last user message pattern
@@ -47,9 +57,28 @@ export class GeminiProvider implements AIProvider {
     let outputTokens = 0;
 
     for await (const chunk of result.stream) {
+      // Text parts
       const text = chunk.text();
       if (text) {
         onChunk({ type: "text", text });
+      }
+
+      // Function call parts (Gemini emits these as non-streaming candidates)
+      const candidates = chunk.candidates ?? [];
+      for (const candidate of candidates) {
+        for (const part of candidate.content?.parts ?? []) {
+          if (part.functionCall) {
+            const fc = part.functionCall;
+            onChunk({
+              type: "tool_call",
+              toolCall: {
+                id: `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                name: fc.name ?? "",
+                input: (fc.args ?? {}) as Record<string, unknown>,
+              },
+            });
+          }
+        }
       }
     }
 

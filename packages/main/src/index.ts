@@ -6,6 +6,7 @@ import type * as nodePtyTypes from "node-pty";
 import { registerAiHandlers } from "./ai-handlers";
 import { projectStore } from "./project-store";
 import { BridgeManager } from "./bridge-manager";
+import { agenticEngine } from "./agentic-engine";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -173,6 +174,82 @@ function registerHandlers(): void {
     return result.canceled ? null : (result.filePaths[0] ?? null);
   });
 
+  // Agentic Engine handlers
+  handle("agentic:readFile", (_event, { projectId, path: filePath }) => {
+    return agenticEngine.readFile(projectId, filePath);
+  });
+
+  handle("agentic:writeFile", async (_event, { projectId, path: filePath, content }) => {
+    const snapshotId = await agenticEngine.writeFile(projectId, filePath, content);
+    return { snapshotId };
+  });
+
+  handle("agentic:deleteFile", async (_event, { projectId, path: filePath }) => {
+    const snapshotId = await agenticEngine.deleteFile(projectId, filePath);
+    return { snapshotId };
+  });
+
+  handle("agentic:runCommand", (_event, { projectId, command, cwd }) => {
+    return agenticEngine.runCommand(projectId, command, cwd);
+  });
+
+  handle("agentic:listDir", (_event, { projectId, path: dirPath }) => {
+    return agenticEngine.listDir(projectId, dirPath);
+  });
+
+  handle("agentic:rollback", (_event, { projectId }) => {
+    return agenticEngine.rollback(projectId);
+  });
+
+  handle("agentic:rollbackTo", (_event, { projectId, snapshotId }) => {
+    return agenticEngine.rollbackTo(projectId, snapshotId);
+  });
+
+  handle("agentic:get-log", (_event, { projectId }) => {
+    return agenticEngine.getLog(projectId);
+  });
+
+  handle("agentic:clear-log", (_event, { projectId }) => {
+    agenticEngine.clearLog(projectId);
+  });
+
+  handle("agentic:get-approval-mode", (_event, { projectId }) => {
+    return agenticEngine.getApprovalMode(projectId);
+  });
+
+  handle("agentic:set-approval-mode", (_event, { projectId, mode }) => {
+    agenticEngine.setApprovalMode(projectId, mode);
+    // Also persist in project-store so it survives restarts
+    try {
+      projectStore.update(projectId, { approvalMode: mode });
+    } catch {
+      // project may not be in store if called before open — engine state is source of truth
+    }
+  });
+
+  handle("agentic:get-settings", (_event, { projectId }) => {
+    return agenticEngine.getSettings(projectId);
+  });
+
+  handle("agentic:set-settings", (_event, { projectId, settings }) => {
+    const updated = agenticEngine.setSettings(projectId, settings);
+    // Keep project-store in sync for approvalMode
+    if (settings.approvalMode !== undefined) {
+      try {
+        projectStore.update(projectId, { approvalMode: settings.approvalMode });
+      } catch { /* ignore */ }
+    }
+    return updated;
+  });
+
+  handle("agentic:approve", (_event, { requestId }) => {
+    agenticEngine.approve(requestId);
+  });
+
+  handle("agentic:reject", (_event, { requestId }) => {
+    agenticEngine.reject(requestId);
+  });
+
   // Browser Bridge (Nexus Bridge) handlers
   handle("bridge:open-preview", (_event, payload) => {
     return bridgeManager.openPreview(payload);
@@ -197,12 +274,26 @@ function registerHandlers(): void {
   handle("bridge:list-windows", () => {
     return bridgeManager.listWindows();
   });
+
+  handle("bridge:reload-preview", (_event, { wrenWindowId }) => {
+    bridgeManager.reloadPreview(wrenWindowId);
+  });
+}
+
+// Wire up approval-request emitter after window is created
+function wireAgenticEmitter(): void {
+  agenticEngine.setApprovalEmitter((data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("agentic:approval-request", data);
+    }
+  });
 }
 
 app.whenReady().then(() => {
   registerHandlers();
   bridgeManager.start();
   createWindow();
+  wireAgenticEmitter();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

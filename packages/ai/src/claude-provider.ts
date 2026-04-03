@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { AiMessage, AiModel } from "@wren/shared";
-import type { AIProvider, ChatOptions, StreamChunk, UsageStats } from "./types";
+import type { AIProvider, ChatOptions, ProviderChunk, UsageStats } from "./types";
+import { toAnthropicTools } from "./tools";
 
 const CLAUDE_MODELS: AiModel[] = [
   { id: "claude-sonnet-4-5-20250514", name: "Claude Sonnet 4.5", providerId: "claude" },
@@ -21,12 +22,23 @@ export class ClaudeProvider implements AIProvider {
   async sendMessage(
     messages: AiMessage[],
     options: ChatOptions,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (chunk: ProviderChunk) => void
   ): Promise<UsageStats> {
+    // Cast required: toAnthropicTools returns plain objects; SDK expects InputSchema
+    // with a required `type` field. The JSON schema objects are compatible at runtime.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anthropicTools = options.tools?.length
+      ? (toAnthropicTools(options.tools) as any)
+      : undefined;
+
+    // Buffer for accumulating tool_use blocks across stream events
+    const toolUseBlocks = new Map<number, { id: string; name: string; inputJson: string }>();
+
     const stream = this.client.messages.stream({
       model: options.model,
       max_tokens: options.maxTokens ?? 4096,
       ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
+      ...(anthropicTools ? { tools: anthropicTools } : {}),
       messages: messages.map((m) => ({
         role: m.role,
         content: m.content,
@@ -34,11 +46,38 @@ export class ClaudeProvider implements AIProvider {
     });
 
     for await (const event of stream) {
-      if (
-        event.type === "content_block_delta" &&
-        event.delta.type === "text_delta"
-      ) {
-        onChunk({ type: "text", text: event.delta.text });
+      if (event.type === "content_block_start") {
+        if (event.content_block.type === "tool_use") {
+          toolUseBlocks.set(event.index, {
+            id: event.content_block.id,
+            name: event.content_block.name,
+            inputJson: "",
+          });
+        }
+      } else if (event.type === "content_block_delta") {
+        if (event.delta.type === "text_delta") {
+          onChunk({ type: "text", text: event.delta.text });
+        } else if (event.delta.type === "input_json_delta") {
+          const block = toolUseBlocks.get(event.index);
+          if (block) {
+            block.inputJson += event.delta.partial_json;
+          }
+        }
+      } else if (event.type === "content_block_stop") {
+        const block = toolUseBlocks.get(event.index);
+        if (block) {
+          let input: Record<string, unknown> = {};
+          try {
+            input = JSON.parse(block.inputJson) as Record<string, unknown>;
+          } catch {
+            // malformed JSON — pass empty input
+          }
+          onChunk({
+            type: "tool_call",
+            toolCall: { id: block.id, name: block.name, input },
+          });
+          toolUseBlocks.delete(event.index);
+        }
       }
     }
 
@@ -64,9 +103,7 @@ export class ClaudeProvider implements AIProvider {
       return true;
     } catch (err) {
       const error = err as { status?: number };
-      // 401 = invalid key, anything else = network/server issue but key might still be valid
       if (error.status === 401) return false;
-      // Rate limit or other error — treat key as valid
       if (error.status === 429) return true;
       throw err;
     }
