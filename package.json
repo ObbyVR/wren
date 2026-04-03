@@ -1,0 +1,31 @@
+{
+  "name": "wren",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wren IDE — BYOK-first, multi-provider AI, multi-project desktop IDE",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "pnpm --filter @wren/shared build && pnpm --filter @wren/preload build && pnpm --filter @wren/main build && pnpm --filter @wren/renderer build",
+    "lint": "eslint packages/*/src --ext .ts,.tsx",
+    "typecheck": "pnpm -r run typecheck",
+    "dist": "pnpm build && electron-builder",
+    "start": "pnpm --filter @wren/main run start"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.21.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  }
+}

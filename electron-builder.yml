@@ -1,0 +1,36 @@
+appId: ing.wren.app
+productName: Wren
+copyright: Copyright © 2026 Wren
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - packages/main/dist/**/*
+  - packages/preload/dist/**/*
+  - packages/renderer/dist/**/*
+  - package.json
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Development
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
