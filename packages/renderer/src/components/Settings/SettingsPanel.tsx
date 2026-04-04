@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useProviders, PROVIDER_META } from "../../store/providerStore";
 import { useProjects } from "../../store/projectStore";
 import { useAgentic } from "../../store/agenticStore";
-import type { ProviderId, ProviderConfig, ApprovalMode } from "@wren/shared";
+import type { ProviderId, ProviderConfig, ApprovalMode, LicenseStatus, TierLimits } from "@wren/shared";
 import styles from "./SettingsPanel.module.css";
 
-type Section = "providers" | "agentic" | "appearance" | "shortcuts" | "about" | "help";
+type Section = "providers" | "agentic" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
 
 const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "ollama"];
 
@@ -161,6 +161,27 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
   const { projects, activeProject, setProjectProvider } = useProjects();
   const { settings, updateSettings } = useAgentic();
 
+  // License state
+  const [licenseKey, setLicenseKey] = useState("");
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+  const [licenseError, setLicenseError] = useState<string | null>(null);
+  const [licenseLimits, setLicenseLimits] = useState<TierLimits | null>(null);
+
+  // Telemetry state
+  const [telemetryOptedIn, setTelemetryOptedIn] = useState(false);
+
+  useEffect(() => {
+    void window.wren.invoke("license:get-status").then((s) => {
+      setLicenseStatus(s);
+    });
+    void window.wren.invoke("license:get-limits").then((l) => {
+      setLicenseLimits(l);
+    });
+    void window.wren.invoke("telemetry:get-settings").then((s) => {
+      setTelemetryOptedIn(s.optedIn);
+    });
+  }, []);
+
   // Sync legacy Anthropic key from existing KeySettings flow
   useEffect(() => {
     void window.wren.invoke("ai:get-key-status").then(({ hasKey }) => {
@@ -202,6 +223,32 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
     [removeProviderKey],
   );
 
+  const handleLicenseActivate = useCallback(async () => {
+    setLicenseError(null);
+    const status = await window.wren.invoke("license:activate", { key: licenseKey.trim() });
+    setLicenseStatus(status);
+    if (status.valid) {
+      setLicenseKey("");
+      const limits = await window.wren.invoke("license:get-limits");
+      setLicenseLimits(limits);
+    } else {
+      setLicenseError(status.reason ?? "Invalid key");
+    }
+  }, [licenseKey]);
+
+  const handleLicenseDeactivate = useCallback(async () => {
+    await window.wren.invoke("license:deactivate");
+    const status = await window.wren.invoke("license:get-status");
+    setLicenseStatus(status);
+    const limits = await window.wren.invoke("license:get-limits");
+    setLicenseLimits(limits);
+  }, []);
+
+  const handleTelemetryToggle = useCallback(async (optedIn: boolean) => {
+    setTelemetryOptedIn(optedIn);
+    await window.wren.invoke("telemetry:set-opted-in", { optedIn });
+  }, []);
+
   const handleTest = useCallback(
     async (id: ProviderId) => {
       const config = getProvider(id);
@@ -229,7 +276,7 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
         {/* Sidebar */}
         <nav className={styles.sidebar}>
           <p className={styles.sidebarTitle}>Settings</p>
-          {(["providers", "agentic", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
+          {(["providers", "agentic", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
             <button
               key={s}
               className={`${styles.navItem} ${section === s ? styles.navItemActive : ""}`}
@@ -349,6 +396,148 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
                 <em>Manual</em> — a dialog appears before every action.<br />
                 <em>Selective</em> — only file writes and deletes require approval; reads and list are automatic.<br />
                 <em>Auto</em> — the AI acts freely without interruptions.
+              </div>
+            </div>
+          )}
+
+          {section === "license" && (
+            <div>
+              <h2 className={styles.sectionTitle}>License</h2>
+              <p className={styles.sectionDesc}>
+                Activate a Pro or Team license key to unlock unlimited projects and providers.
+              </p>
+
+              {licenseStatus && (
+                <div className={styles.licenseCard}>
+                  <div className={styles.licenseCardRow}>
+                    <span className={styles.licenseCardLabel}>Plan</span>
+                    <span
+                      className={`${styles.tierBadge} ${
+                        licenseStatus.tier === "pro"
+                          ? styles.tierBadgePro
+                          : licenseStatus.tier === "team"
+                            ? styles.tierBadgeTeam
+                            : styles.tierBadgeFree
+                      }`}
+                    >
+                      {licenseStatus.tier}
+                    </span>
+                  </div>
+                  {licenseStatus.email && (
+                    <div className={styles.licenseCardRow}>
+                      <span className={styles.licenseCardLabel}>Email</span>
+                      <span className={styles.licenseCardValue}>{licenseStatus.email}</span>
+                    </div>
+                  )}
+                  {licenseStatus.expiresAt && (
+                    <div className={styles.licenseCardRow}>
+                      <span className={styles.licenseCardLabel}>Expires</span>
+                      <span className={styles.licenseCardValue}>
+                        {new Date(licenseStatus.expiresAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {licenseLimits && (
+                <div className={styles.limitsList}>
+                  <div className={styles.limitsRow}>
+                    <span className={licenseLimits.maxProjects === -1 ? styles.limitsCheck : styles.limitsCross}>
+                      {licenseLimits.maxProjects === -1 ? "✓" : "✗"}
+                    </span>
+                    <span className={styles.limitsLabel}>
+                      {licenseLimits.maxProjects === -1
+                        ? "Unlimited projects"
+                        : `Up to ${licenseLimits.maxProjects} project`}
+                    </span>
+                  </div>
+                  <div className={styles.limitsRow}>
+                    <span className={licenseLimits.maxProviders === -1 ? styles.limitsCheck : styles.limitsCross}>
+                      {licenseLimits.maxProviders === -1 ? "✓" : "✗"}
+                    </span>
+                    <span className={styles.limitsLabel}>
+                      {licenseLimits.maxProviders === -1
+                        ? "Unlimited AI providers"
+                        : `Up to ${licenseLimits.maxProviders} provider`}
+                    </span>
+                  </div>
+                  <div className={styles.limitsRow}>
+                    <span className={licenseLimits.sharedWorkspaces ? styles.limitsCheck : styles.limitsCross}>
+                      {licenseLimits.sharedWorkspaces ? "✓" : "✗"}
+                    </span>
+                    <span className={styles.limitsLabel}>Shared workspaces (Team)</span>
+                  </div>
+                </div>
+              )}
+
+              {licenseStatus?.tier === "free" || !licenseStatus?.valid ? (
+                <div>
+                  <div className={styles.formRow}>
+                    <label className={styles.formLabel}>License key</label>
+                    <input
+                      className={styles.formInput}
+                      type="text"
+                      placeholder="xxxx.eyJ0aWVyIjoicHJvIi4uLn0.sig"
+                      value={licenseKey}
+                      onChange={(e) => setLicenseKey(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") void handleLicenseActivate(); }}
+                    />
+                  </div>
+                  {licenseError && (
+                    <p className={styles.licenseError}>{licenseError}</p>
+                  )}
+                  <div className={styles.providerActions} style={{ marginTop: "8px" }}>
+                    <button
+                      className={styles.btnPrimary}
+                      disabled={!licenseKey.trim()}
+                      onClick={() => void handleLicenseActivate()}
+                    >
+                      Activate
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.providerActions}>
+                  <button
+                    className={styles.btnDanger}
+                    onClick={() => void handleLicenseDeactivate()}
+                  >
+                    Deactivate license
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {section === "telemetry" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Telemetry</h2>
+              <p className={styles.sectionDesc}>
+                Help improve Wren by sharing anonymous usage data. Opt-in is required — nothing is sent without your consent.
+              </p>
+
+              <div className={styles.formRow}>
+                <label className={styles.toggle}>
+                  <input
+                    type="checkbox"
+                    checked={telemetryOptedIn}
+                    onChange={(e) => void handleTelemetryToggle(e.target.checked)}
+                  />
+                  <span className={styles.toggleSlider} />
+                  <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#9090b0" }}>
+                    Send anonymous usage data
+                  </span>
+                </label>
+              </div>
+
+              <div className={styles.telemetryNote}>
+                <strong>What is collected (when opted in):</strong><br />
+                <em>app_launched</em> — when Wren starts<br />
+                <em>session_duration</em> — how long a session lasts<br />
+                <em>provider_used</em> — which AI provider was active (no keys or messages)<br /><br />
+                <strong>What is never collected:</strong> source code, file contents, API keys, chat messages, personal identifiers.<br /><br />
+                You can change this setting at any time. Default is OFF.
               </div>
             </div>
           )}

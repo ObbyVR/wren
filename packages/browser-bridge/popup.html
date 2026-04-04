@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wren Nexus Bridge</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      width: 240px;
+      padding: 16px;
+      background: #1a1a2e;
+      color: #c8c8e8;
+      margin: 0;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .logo img { width: 24px; height: 24px; }
+    .logo span { font-size: 14px; font-weight: 600; color: #e8e8f8; }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4a4a54;
+    }
+    .dot.connected { background: #34d07b; }
+    .hint {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #6060a0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <img src="icons/icon48.png" alt="Wren" />
+    <span>Nexus Bridge</span>
+  </div>
+  <div class="status">
+    <div class="dot" id="dot"></div>
+    <span id="status-text">Checking…</span>
+  </div>
+  <p class="hint">This extension connects Wren IDE to your browser for live preview. No data leaves your machine.</p>
+  <script src="popup.js"></script>
+</body>
+</html>

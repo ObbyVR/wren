@@ -3,6 +3,7 @@
   "name": "Wren Nexus Bridge",
   "version": "0.1.0",
   "description": "Connects Wren IDE to native browser windows for live preview and network inspection. Only controls windows opened by Wren.",
+  "homepage_url": "https://wren.dev",
 
   "permissions": [
     "nativeMessaging",
@@ -21,6 +22,7 @@
 
   "action": {
     "default_title": "Wren Nexus Bridge",
+    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

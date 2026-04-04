@@ -1,0 +1,9 @@
+{
+  "name": "@wren/browser-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wren Nexus Bridge Chrome extension",
+  "scripts": {
+    "build:ext": "node build-ext.mjs"
+  }
+}

@@ -369,6 +369,34 @@ export interface IpcChannelMap {
     response: void;
   };
 
+  // License management
+  "license:get-status": {
+    request: void;
+    response: LicenseStatus;
+  };
+  "license:activate": {
+    request: { key: string };
+    response: LicenseStatus;
+  };
+  "license:deactivate": {
+    request: void;
+    response: void;
+  };
+  "license:get-limits": {
+    request: void;
+    response: TierLimits;
+  };
+
+  // Telemetry settings
+  "telemetry:get-settings": {
+    request: void;
+    response: TelemetrySettings;
+  };
+  "telemetry:set-opted-in": {
+    request: { optedIn: boolean };
+    response: void;
+  };
+
   // Browser Bridge (Nexus Bridge)
   "bridge:open-preview": {
     request: BridgeOpenPreviewPayload;
@@ -669,3 +697,32 @@ export interface BridgeNetworkEvent {
   error?: string;
   timestamp: number;
 }
+
+// ── License types ─────────────────────────────────────────────────────────────
+
+export type LicenseTier = "free" | "pro" | "team";
+
+export interface LicenseStatus {
+  tier: LicenseTier;
+  email: string;
+  expiresAt: string | null;
+  valid: boolean;
+  reason?: string;
+}
+
+export interface TierLimits {
+  maxProjects: number;
+  maxProviders: number;
+  sharedWorkspaces: boolean;
+}
+
+// ── Telemetry types ───────────────────────────────────────────────────────────
+
+export interface TelemetrySettings {
+  optedIn: boolean;
+}
+
+export type TelemetryEventName =
+  | "app_launched"
+  | "session_duration"
+  | "provider_used";

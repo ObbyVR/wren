@@ -2,13 +2,19 @@
   "name": "wren",
   "version": "0.1.0",
   "private": true,
+  "main": "packages/main/dist/index.js",
   "description": "Wren IDE — BYOK-first, multi-provider AI, multi-project desktop IDE",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "build": "pnpm --filter @wren/shared build && pnpm --filter @wren/ai build && pnpm --filter @wren/preload build && pnpm --filter @wren/main build && pnpm --filter @wren/renderer build",
+    "build": "pnpm --filter @wren/shared build && pnpm --filter @wren/ai build && pnpm --filter @wren/license build && pnpm --filter @wren/preload build && pnpm --filter @wren/main build && pnpm --filter @wren/renderer build",
     "lint": "eslint packages/*/src --ext .ts,.tsx",
     "typecheck": "pnpm -r run typecheck",
     "dist": "pnpm build && electron-builder",
+    "dist:mac": "pnpm build && electron-builder --mac",
+    "dist:win": "pnpm build && electron-builder --win",
+    "dist:linux": "pnpm build && electron-builder --linux",
+    "gen-icons": "node scripts/gen-icons.mjs",
+    "build:ext": "pnpm --filter @wren/browser-bridge build:ext",
     "start": "pnpm --filter @wren/main run start"
   },
   "workspaces": [

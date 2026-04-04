@@ -3,11 +3,14 @@ import path from "path";
 import fs from "fs/promises";
 import type { IpcChannelMap, FileEntry } from "@wren/shared";
 import type * as nodePtyTypes from "node-pty";
+import { autoUpdater } from "electron-updater";
 import { registerAiHandlers } from "./ai-handlers";
 import { projectStore } from "./project-store";
 import { BridgeManager } from "./bridge-manager";
 import { agenticEngine } from "./agentic-engine";
 import { registerGitHandlers } from "./git-handlers";
+import { registerLicenseHandlers } from "./license-handlers";
+import { registerTelemetryHandlers } from "./telemetry-handlers";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -254,6 +257,12 @@ function registerHandlers(): void {
   // Git handlers
   registerGitHandlers(handle, () => mainWindow);
 
+  // License handlers
+  registerLicenseHandlers(handle);
+
+  // Telemetry handlers
+  registerTelemetryHandlers(handle);
+
   // Browser Bridge (Nexus Bridge) handlers
   handle("bridge:open-preview", (_event, payload) => {
     return bridgeManager.openPreview(payload);
@@ -293,11 +302,41 @@ function wireAgenticEmitter(): void {
   });
 }
 
+// ─── Auto-updater ─────────────────────────────────────────────────────────────
+// Only active in production builds. WREN_UPDATE_URL must be set to the
+// update server base URL (see electron-builder.yml publish.url).
+function setupAutoUpdater(): void {
+  if (isDev) return;
+
+  autoUpdater.autoDownload = false;        // user confirms before downloading
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-available", (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("updater:update-available", info);
+    }
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("updater:update-downloaded", info);
+    }
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("[auto-updater] error:", err.message);
+  });
+
+  // Check shortly after launch; caller can also trigger via IPC
+  setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 10_000);
+}
+
 app.whenReady().then(() => {
   registerHandlers();
   bridgeManager.start();
   createWindow();
   wireAgenticEmitter();
+  setupAutoUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
