@@ -1,0 +1,499 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-base);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.branchArea {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.branchBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-tab);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  transition: background 0.12s;
+}
+
+.branchBtn:hover {
+  background: var(--bg-hover, #2a2a3a);
+}
+
+.branchIcon { font-size: 13px; flex-shrink: 0; }
+.branchName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.branchSync { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+.branchChevron { color: var(--text-muted); font-size: 9px; flex-shrink: 0; }
+
+.branchDropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--bg-panel, #1c1c28);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.branchDropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.newBranchBtn {
+  background: none;
+  border: none;
+  color: var(--accent, #7c6fff);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+}
+.newBranchBtn:hover { text-decoration: underline; }
+
+.branchItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  transition: background 0.1s;
+}
+.branchItem:hover { background: var(--bg-tab); }
+.branchItemActive { color: var(--text-primary); font-weight: 600; }
+.branchCheck { color: var(--accent, #7c6fff); }
+.branchLoading { padding: 8px; color: var(--text-muted); text-align: center; }
+
+.syncBtns {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.syncBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: color 0.1s, background 0.1s;
+}
+.syncBtn:hover:not(:disabled) { color: var(--text-primary); background: var(--bg-tab); }
+.syncBtn:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Body (file list) ────────────────────────────────────────────────────────── */
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.section {
+  padding: 0 0 4px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  background: var(--bg-base);
+  z-index: 1;
+}
+
+.stageAllBtn {
+  background: none;
+  border: none;
+  color: var(--accent, #7c6fff);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0;
+}
+.stageAllBtn:hover { text-decoration: underline; }
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  cursor: default;
+  transition: background 0.08s;
+}
+.fileRow:hover { background: var(--bg-tab); }
+
+.fileCheckbox {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  accent-color: var(--accent, #7c6fff);
+}
+
+.fileStatus {
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.fileModified  { color: #d4a056; }
+.fileAdded     { color: #4ec994; }
+.fileDeleted   { color: #e05c5c; }
+.fileRenamed   { color: #5ca0e0; }
+.fileUntracked { color: #9090b0; }
+.fileConflicted { color: #e05c5c; }
+
+.fileName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.fileName:hover { color: var(--accent, #7c6fff); }
+
+.filePath {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cleanState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── No Repo state ───────────────────────────────────────────────────────────── */
+
+.noRepo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.noRepoIcon {
+  font-size: 28px;
+  color: var(--text-muted);
+}
+
+.refreshBtn {
+  margin-top: 4px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+}
+.refreshBtn:hover { background: var(--bg-tab); }
+
+/* ── Commit area ─────────────────────────────────────────────────────────────── */
+
+.commitArea {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.commitMsg {
+  width: 100%;
+  background: var(--bg-tab);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  resize: none;
+  box-sizing: border-box;
+}
+.commitMsg:focus {
+  outline: none;
+  border-color: var(--accent, #7c6fff);
+}
+
+.commitBtn {
+  background: var(--accent, #7c6fff);
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  transition: opacity 0.12s;
+}
+.commitBtn:hover:not(:disabled) { opacity: 0.85; }
+.commitBtn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Error ───────────────────────────────────────────────────────────────────── */
+
+.errorMsg {
+  padding: 4px 8px;
+  background: rgba(224, 92, 92, 0.12);
+  color: #e05c5c;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(224, 92, 92, 0.3);
+}
+
+/* ── Diff Overlay ────────────────────────────────────────────────────────────── */
+
+.diffOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.diffPanel {
+  background: var(--bg-panel, #1c1c28);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+}
+
+.diffHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.diffTitle {
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffClose {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+  line-height: 1;
+}
+.diffClose:hover { color: var(--text-primary); }
+
+.diffBody {
+  flex: 1;
+  overflow: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
+
+.diffLoading, .diffEmpty {
+  padding: 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.diffHunkHeader {
+  padding: 3px 8px;
+  background: rgba(100,100,200,0.12);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.diffLineAdd, .diffLineRemove, .diffLineContext {
+  display: flex;
+  align-items: baseline;
+  padding: 0 8px;
+  line-height: 1.5;
+}
+.diffLineAdd    { background: rgba(78,201,148,0.08); }
+.diffLineRemove { background: rgba(224,92,92,0.08); }
+
+.diffLineNo {
+  flex-shrink: 0;
+  width: 44px;
+  font-size: 10px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.diffLineContent {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-primary);
+}
+
+.diffLineAdd .diffLineContent    { color: #4ec994; }
+.diffLineRemove .diffLineContent { color: #e05c5c; }
+
+/* ── Create branch modal ─────────────────────────────────────────────────────── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: var(--bg-panel, #1c1c28);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 320px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modalBody {
+  padding: 12px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.branchInput {
+  width: 100%;
+  background: var(--bg-tab);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  box-sizing: border-box;
+}
+.branchInput:focus {
+  outline: none;
+  border-color: var(--accent, #7c6fff);
+}
+
+.btnPrimary {
+  background: var(--accent, #7c6fff);
+  border: none;
+  border-radius: 4px;
+  padding: 5px 12px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+.btnPrimary:hover:not(:disabled) { opacity: 0.85; }
+.btnPrimary:disabled { opacity: 0.4; cursor: default; }
+
+.btnSecondary {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-ui);
+}
+.btnSecondary:hover { background: var(--bg-tab); }

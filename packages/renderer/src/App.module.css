@@ -77,6 +77,10 @@
   background: var(--bg-tab);
 }
 
+.statusBtnActive {
+  color: var(--accent, #7c6fff) !important;
+}
+
 .statusSpacer { flex: 1; }
 
 .chatToggleBtn {
@@ -131,4 +135,36 @@
 @keyframes agenticStatusPulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
+}
+
+/* ── Hub layout ──────────────────────────────────────────────────────────────── */
+
+.hubChatColumn {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+.hubProjectLabel {
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: var(--font-ui);
+  color: var(--text-muted);
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hubCenterColumn {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }

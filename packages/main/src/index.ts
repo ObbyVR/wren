@@ -7,6 +7,7 @@ import { registerAiHandlers } from "./ai-handlers";
 import { projectStore } from "./project-store";
 import { BridgeManager } from "./bridge-manager";
 import { agenticEngine } from "./agentic-engine";
+import { registerGitHandlers } from "./git-handlers";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -249,6 +250,9 @@ function registerHandlers(): void {
   handle("agentic:reject", (_event, { requestId }) => {
     agenticEngine.reject(requestId);
   });
+
+  // Git handlers
+  registerGitHandlers(handle, () => mainWindow);
 
   // Browser Bridge (Nexus Bridge) handlers
   handle("bridge:open-preview", (_event, payload) => {

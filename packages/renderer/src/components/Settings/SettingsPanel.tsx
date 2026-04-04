@@ -5,12 +5,13 @@ import { useAgentic } from "../../store/agenticStore";
 import type { ProviderId, ProviderConfig, ApprovalMode } from "@wren/shared";
 import styles from "./SettingsPanel.module.css";
 
-type Section = "providers" | "agentic" | "appearance" | "shortcuts" | "about";
+type Section = "providers" | "agentic" | "appearance" | "shortcuts" | "about" | "help";
 
 const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "ollama"];
 
 interface Props {
   onClose: () => void;
+  onTriggerOnboarding?: () => void;
 }
 
 // ── Provider row ─────────────────────────────────────────────────────────────
@@ -153,7 +154,7 @@ function ProviderRow({ providerId, config, onSave, onRemove, onTest }: ProviderR
 
 // ── Main settings panel ──────────────────────────────────────────────────────
 
-export function SettingsPanel({ onClose }: Props) {
+export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
   const [section, setSection] = useState<Section>("providers");
   const { providers, getProvider, setProviderKey, removeProviderKey, setProviderStatus } =
     useProviders();
@@ -228,7 +229,7 @@ export function SettingsPanel({ onClose }: Props) {
         {/* Sidebar */}
         <nav className={styles.sidebar}>
           <p className={styles.sidebarTitle}>Settings</p>
-          {(["providers", "agentic", "appearance", "shortcuts", "about"] as Section[]).map((s) => (
+          {(["providers", "agentic", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
             <button
               key={s}
               className={`${styles.navItem} ${section === s ? styles.navItemActive : ""}`}
@@ -402,6 +403,35 @@ export function SettingsPanel({ onClose }: Props) {
               <div className={styles.aboutRow}>
                 <span className={styles.aboutLabel}>Projects</span>
                 <span className={styles.aboutValue}>{projects.length} open</span>
+              </div>
+            </div>
+          )}
+
+          {section === "help" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Help</h2>
+              <p className={styles.sectionDesc}>
+                Setup wizard and documentation resources.
+              </p>
+              <div style={{ marginTop: "1rem" }}>
+                <button
+                  className={styles.btnPrimary}
+                  onClick={() => onTriggerOnboarding?.()}
+                >
+                  ✦ Restart Setup Wizard
+                </button>
+                <p className={styles.sectionDesc} style={{ marginTop: "0.75rem" }}>
+                  Re-run the onboarding flow to change your theme, API keys, or open a new project.
+                </p>
+              </div>
+              <div className={styles.sectionDesc} style={{ marginTop: "1.5rem" }}>
+                <strong>Keyboard shortcuts</strong><br />
+                <em>Cmd+,</em> — Open Settings<br />
+                <em>Cmd+T</em> — New project tab<br />
+                <em>Cmd+W</em> — Close project tab<br />
+                <em>✦ Chat</em> — Toggle AI chat panel<br />
+                <em>⊞ Hub</em> — Switch to Hub layout<br />
+                <em>⎇ Git</em> — Open Git panel<br />
               </div>
             </div>
           )}
