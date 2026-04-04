@@ -271,6 +271,98 @@ export interface IpcChannelMap {
     response: AgenticSettings;
   };
 
+  // Git — core operations
+  "git:status": {
+    request: { repoPath: string };
+    response: GitStatus;
+  };
+  "git:diff": {
+    request: { repoPath: string; staged?: boolean; filePath?: string };
+    response: GitDiff;
+  };
+  "git:stage": {
+    request: { repoPath: string; paths: string[] };
+    response: void;
+  };
+  "git:unstage": {
+    request: { repoPath: string; paths: string[] };
+    response: void;
+  };
+  "git:commit": {
+    request: { repoPath: string; message: string };
+    response: CommitResult;
+  };
+  "git:push": {
+    request: { repoPath: string; remote?: string; branch?: string; force?: boolean };
+    response: void;
+  };
+  "git:pull": {
+    request: { repoPath: string; remote?: string; branch?: string };
+    response: { mergeResult: string };
+  };
+  "git:fetch": {
+    request: { repoPath: string; remote?: string };
+    response: void;
+  };
+
+  // Git — branches
+  "git:list-branches": {
+    request: { repoPath: string; includeRemote?: boolean };
+    response: BranchInfo[];
+  };
+  "git:create-branch": {
+    request: { repoPath: string; name: string; startPoint?: string };
+    response: void;
+  };
+  "git:switch-branch": {
+    request: { repoPath: string; name: string };
+    response: void;
+  };
+  "git:delete-branch": {
+    request: { repoPath: string; name: string; force?: boolean };
+    response: void;
+  };
+
+  // Git — log
+  "git:log": {
+    request: { repoPath: string; maxCount?: number; branch?: string };
+    response: GitLogEntry[];
+  };
+
+  // Git — GitHub OAuth
+  "git:oauth-start": {
+    request: { clientId?: string };
+    response: { deviceCode: string; userCode: string; verificationUri: string; expiresIn: number; interval: number };
+  };
+  "git:oauth-poll": {
+    request: { deviceCode: string; interval: number };
+    response: GitOAuthStatus;
+  };
+  "git:oauth-status": {
+    request: void;
+    response: GitOAuthStatus;
+  };
+  "git:oauth-logout": {
+    request: void;
+    response: void;
+  };
+
+  // Git — clone
+  "git:clone": {
+    request: { repoUrl: string; destPath: string; depth?: number };
+    response: GitCloneResult;
+  };
+
+  // Git — stash
+  "git:stash": {
+    request: { repoPath: string; message?: string };
+    response: void;
+  };
+  "git:stash-pop": {
+    request: { repoPath: string };
+    response: void;
+  };
+
   // Browser Bridge — reload current preview page
   "bridge:reload-preview": {
     request: { wrenWindowId: string };
@@ -427,6 +519,7 @@ export interface AiTransferContextPayload {
 export interface AiTransferContextResult {
   messages: AiMessage[];
   summary: string[];
+  strippedCount: number;
 }
 
 // ── Project config ────────────────────────────────────────────────────────────
@@ -449,6 +542,90 @@ export interface ProjectInfo {
   aiProvider: string;
   model: string;
   approvalMode: ApprovalMode;
+}
+
+// ── Git types ─────────────────────────────────────────────────────────────────
+
+export type GitFileStatus =
+  | "modified"
+  | "added"
+  | "deleted"
+  | "renamed"
+  | "copied"
+  | "untracked"
+  | "ignored"
+  | "conflicted";
+
+export interface GitFileEntry {
+  path: string;
+  status: GitFileStatus;
+  staged: boolean;
+  oldPath?: string; // for renamed files
+}
+
+export interface GitStatus {
+  branch: string;
+  tracking?: string;
+  ahead: number;
+  behind: number;
+  files: GitFileEntry[];
+  isRepo: boolean;
+}
+
+export interface GitDiffFile {
+  path: string;
+  hunks: GitDiffHunk[];
+}
+
+export interface GitDiffHunk {
+  header: string;
+  lines: GitDiffLine[];
+}
+
+export interface GitDiffLine {
+  type: "context" | "add" | "remove";
+  content: string;
+  oldLineNo?: number;
+  newLineNo?: number;
+}
+
+export interface GitDiff {
+  files: GitDiffFile[];
+}
+
+export interface BranchInfo {
+  name: string;
+  isCurrent: boolean;
+  isRemote: boolean;
+  upstream?: string;
+  lastCommit?: string;
+}
+
+export interface CommitResult {
+  hash: string;
+  message: string;
+  author: string;
+  timestamp: number;
+}
+
+export interface GitLogEntry {
+  hash: string;
+  shortHash: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export interface GitCloneResult {
+  path: string;
+  repoName: string;
+}
+
+export interface GitOAuthStatus {
+  authenticated: boolean;
+  username?: string;
+  avatarUrl?: string;
+  scopes?: string[];
 }
 
 // ── Browser Bridge (Nexus Bridge) types ───────────────────────────────────────

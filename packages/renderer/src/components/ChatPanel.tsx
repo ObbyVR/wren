@@ -7,12 +7,13 @@ import {
 } from "react";
 import ReactMarkdown from "react-markdown";
 import { KeySettings } from "./KeySettings";
+import { ContextBridgeDialog } from "./ContextBridgeDialog/ContextBridgeDialog";
 import { PROVIDER_META } from "../store/providerStore";
 import { useProjects } from "../store/projectStore";
 import { useCost } from "../store/costStore";
 import { useAgentic } from "../store/agenticStore";
 import styles from "./ChatPanel.module.css";
-import type { AiModel, AiToolCall, AiToolResult } from "@wren/shared";
+import type { AiMessage, AiModel, AiToolCall, AiToolResult, ProviderId } from "@wren/shared";
 
 interface ToolEvent {
   kind: "tool_call" | "tool_result";
@@ -28,9 +29,26 @@ interface ChatMessage {
   toolEvents?: ToolEvent[];
 }
 
+interface BridgePending {
+  fromProviderId: ProviderId;
+  toProviderId: ProviderId;
+  summary: string[];
+  strippedCount: number;
+  transferredMessages: AiMessage[];
+}
+
 function toolCallSummary(tc: AiToolCall): string {
   const arg = Object.values(tc.input)[0];
   return typeof arg === "string" ? arg : JSON.stringify(tc.input).slice(0, 80);
+}
+
+/**
+ * Map renderer-side ProviderId ("anthropic") to the main-process ProviderId
+ * ("claude") used by key-store and provider builders.
+ */
+function toMainProviderId(id: ProviderId): string {
+  if (id === "anthropic") return "claude";
+  return id;
 }
 
 let msgCounter = 0;
@@ -46,6 +64,7 @@ export function ChatPanel() {
   const [streaming, setStreaming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [lastUsage, setLastUsage] = useState<{ in: number; out: number } | null>(null);
+  const [bridgePending, setBridgePending] = useState<BridgePending | null>(null);
 
   const { activeProject } = useProjects();
   const { recordUsage } = useCost();
@@ -54,6 +73,8 @@ export function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeRequestId = useRef<string | null>(null);
+  // Track the last known providerId so we can detect switches
+  const prevProviderIdRef = useRef<ProviderId | null>(null);
 
   // Scroll to bottom on new content
   useEffect(() => {
@@ -72,6 +93,43 @@ export function ChatPanel() {
       }
     });
   }, []);
+
+  // Detect provider switch — if there are messages in history, trigger Context Bridge dialog
+  useEffect(() => {
+    if (!activeProject) return;
+    const current = activeProject.providerId;
+
+    if (prevProviderIdRef.current === null) {
+      // First render — just record the provider, no dialog
+      prevProviderIdRef.current = current;
+      return;
+    }
+
+    if (prevProviderIdRef.current === current) return;
+
+    const prev = prevProviderIdRef.current;
+    prevProviderIdRef.current = current;
+
+    // Only show dialog if there are existing messages
+    if (messages.length === 0) return;
+
+    // Call transfer-context IPC to get the summary and stripped count
+    const history: AiMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
+    void window.wren.invoke("ai:transfer-context", {
+      messages: history,
+      fromProviderId: toMainProviderId(prev),
+      toProviderId: toMainProviderId(current),
+    }).then((result) => {
+      setBridgePending({
+        fromProviderId: prev,
+        toProviderId: current,
+        summary: result.summary,
+        strippedCount: result.strippedCount,
+        transferredMessages: result.messages,
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProject?.providerId]);
 
   // Refresh models when key changes (after settings close)
   const handleSettingsClose = useCallback(() => {
@@ -182,6 +240,33 @@ export function ChatPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProject]);
 
+  // ── Context Bridge handlers ──────────────────────────────────────────────────
+
+  const handleBridgeTransfer = useCallback(() => {
+    if (!bridgePending) return;
+    // Replace the current messages with the transferred (possibly stripped) ones
+    const transferred: ChatMessage[] = bridgePending.transferredMessages.map((m) => ({
+      id: nextId(),
+      role: m.role,
+      content: m.content,
+    }));
+    setMessages(transferred);
+    setBridgePending(null);
+  }, [bridgePending]);
+
+  const handleBridgeFresh = useCallback(() => {
+    setMessages([]);
+    setBridgePending(null);
+  }, []);
+
+  const handleBridgeCancel = useCallback(() => {
+    // User cancelled — do not change messages; revert provider indication
+    // (the project provider was already changed, so we just dismiss)
+    setBridgePending(null);
+  }, []);
+
+  // ── Send message ─────────────────────────────────────────────────────────────
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || streaming || !selectedModel) return;
@@ -216,10 +301,13 @@ export function ChatPanel() {
       { role: "user" as const, content: text },
     ];
 
+    const providerId = activeProject ? toMainProviderId(activeProject.providerId) : "claude";
+
     await window.wren.invoke("ai:send-message", {
       requestId,
       messages: history,
       model: selectedModel,
+      providerId,
       ...(agenticEnabled && activeProject?.rootPath
         ? {
             agenticMode: true,
@@ -432,6 +520,19 @@ export function ChatPanel() {
 
       {/* Key Settings modal */}
       {showSettings && <KeySettings onClose={handleSettingsClose} />}
+
+      {/* Context Bridge dialog — shown when provider switches with existing history */}
+      {bridgePending && (
+        <ContextBridgeDialog
+          fromProviderId={bridgePending.fromProviderId}
+          toProviderId={bridgePending.toProviderId}
+          summary={bridgePending.summary}
+          strippedCount={bridgePending.strippedCount}
+          onTransfer={handleBridgeTransfer}
+          onFresh={handleBridgeFresh}
+          onCancel={handleBridgeCancel}
+        />
+      )}
     </div>
   );
 }
