@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Dark background -->
+  <rect width="512" height="512" rx="96" ry="96" fill="#0F1A14"/>
+  <!-- Emerald glow ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#34D07B" stroke-width="6" opacity="0.25"/>
+  <!-- W letterform — two V shapes forming a W -->
+  <polyline
+    points="96,160 168,352 256,208 344,352 416,160"
+    fill="none"
+    stroke="#34D07B"
+    stroke-width="44"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

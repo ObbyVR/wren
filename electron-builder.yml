@@ -1,36 +1,76 @@
-appId: ing.wren.app
+appId: com.wren.ide
 productName: Wren
 copyright: Copyright © 2026 Wren
 
+# ─── Output ──────────────────────────────────────────────────────────────────
 directories:
-  output: release
+  output: dist
   buildResources: build
 
+# ─── Bundle ──────────────────────────────────────────────────────────────────
+asar: true
 files:
   - packages/main/dist/**/*
   - packages/preload/dist/**/*
   - packages/renderer/dist/**/*
   - package.json
 
+# Extra native modules that must be unpacked for require() to work
+asarUnpack:
+  - "**/node_modules/node-pty/**/*"
+
+# ─── Auto-update ─────────────────────────────────────────────────────────────
+# Set WREN_UPDATE_URL env var (or update-server field below) before releasing.
+# See https://www.electron.build/configuration/publish
+publish:
+  - provider: generic
+    url: ${WREN_UPDATE_URL:-https://updates.wren.example.com}
+
+# ─── macOS ───────────────────────────────────────────────────────────────────
 mac:
   category: public.app-category.developer-tools
+  icon: build/icon.icns
   target:
     - target: dmg
       arch: [arm64, x64]
+  # Code signing — set these env vars in CI:
+  #   CSC_LINK        — path or base64 of .p12 certificate
+  #   CSC_KEY_PASSWORD — password for the .p12
+  #   APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD — for notarization
   hardenedRuntime: true
   gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false    # set to true when CSC_LINK is available in CI
 
+dmg:
+  title: Wren ${version}
+
+# ─── Windows ─────────────────────────────────────────────────────────────────
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
       arch: [x64]
-
-linux:
-  target:
-    - target: AppImage
-      arch: [x64]
-  category: Development
+  # Code signing — set these env vars in CI:
+  #   WIN_CSC_LINK        — path or base64 of .pfx certificate
+  #   WIN_CSC_KEY_PASSWORD — password for the .pfx
+  certificateSubjectName: Wren
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  license: LICENSE
+
+# ─── Linux ───────────────────────────────────────────────────────────────────
+linux:
+  icon: build/icons
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  category: Development
+  synopsis: BYOK-first multi-provider AI IDE
