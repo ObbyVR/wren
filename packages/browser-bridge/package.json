@@ -4,6 +4,10 @@
   "private": true,
   "description": "Wren Nexus Bridge Chrome extension",
   "scripts": {
-    "build:ext": "node build-ext.mjs"
+    "build:ext": "node build-ext.mjs",
+    "build:ext:firefox": "node build-ext.mjs -- --firefox"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1"
   }
 }

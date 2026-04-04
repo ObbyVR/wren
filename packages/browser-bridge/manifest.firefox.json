@@ -5,6 +5,13 @@
   "description": "Connects Wren IDE to native browser windows for live preview and network inspection. Only controls windows opened by Wren.",
   "homepage_url": "https://wren.dev",
 
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "nexus-bridge@wren.dev",
+      "strict_min_version": "109.0"
+    }
+  },
+
   "permissions": [
     "nativeMessaging",
     "scripting",
@@ -16,7 +23,8 @@
   "host_permissions": [],
 
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"],
+    "type": "module"
   },
 
   "content_scripts": [],
