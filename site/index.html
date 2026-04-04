@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wren IDE — Your Keys. Your Models. Your Workspace.</title>
+  <meta name="description" content="Wren is the AI-native IDE that puts you in control. Bring your own keys, choose your models, and code with true agentic intelligence." />
+  <meta property="og:title" content="Wren IDE — Your Keys. Your Models. Your Workspace." />
+  <meta property="og:description" content="The AI-native IDE for serious developers. Multi-project, multi-model, no lock-in." />
+  <meta property="og:type" content="website" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0a0a12',
+            'bg-2': '#0e0e1a',
+            'bg-3': '#13131f',
+            'bg-card': '#111120',
+            accent: '#34D07B',
+            'accent-dim': '#28a862',
+            'accent-glow': 'rgba(52, 208, 123, 0.15)',
+            text: '#e4e4f0',
+            'text-muted': '#8888a8',
+            'text-dim': '#4a4a6a',
+            border: 'rgba(255,255,255,0.07)',
+            'border-accent': 'rgba(52, 208, 123, 0.3)',
+          },
+          fontFamily: {
+            sans: ['Geist', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          animation: {
+            'fade-up': 'fadeUp 0.6s ease forwards',
+            'fade-in': 'fadeIn 0.4s ease forwards',
+            'pulse-slow': 'pulse 3s ease-in-out infinite',
+            'float': 'float 6s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeUp: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+          },
+          backgroundImage: {
+            'grid-pattern': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M0 0h40v40H0z' fill='none'/%3E%3Cpath d='M40 0H0M0 40V0' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3C/svg%3E\")",
+            'glow-radial': 'radial-gradient(ellipse at center, rgba(52, 208, 123, 0.12) 0%, transparent 70%)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #0a0a12;
+      color: #e4e4f0;
+      font-family: 'Geist', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Gradient text */
+    .text-gradient {
+      background: linear-gradient(135deg, #e4e4f0 0%, #34D07B 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .text-gradient-accent {
+      background: linear-gradient(135deg, #34D07B 0%, #5beaa0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Glow effects */
+    .glow-accent {
+      box-shadow: 0 0 40px rgba(52, 208, 123, 0.2), 0 0 80px rgba(52, 208, 123, 0.08);
+    }
+    .glow-accent-sm {
+      box-shadow: 0 0 20px rgba(52, 208, 123, 0.15);
+    }
+    .btn-glow:hover {
+      box-shadow: 0 0 30px rgba(52, 208, 123, 0.4), 0 0 60px rgba(52, 208, 123, 0.15);
+    }
+
+    /* IDE mockup */
+    .ide-window {
+      background: #0e0e1a;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .ide-titlebar {
+      background: #13131f;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .ide-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .ide-tab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      background: rgba(52, 208, 123, 0.12);
+      color: #34D07B;
+      border: 1px solid rgba(52, 208, 123, 0.2);
+    }
+    .ide-inactive-tab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      color: #8888a8;
+    }
+    .ide-sidebar {
+      background: #0d0d1a;
+      border-right: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 8px;
+      width: 180px;
+      flex-shrink: 0;
+    }
+    .ide-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .ide-editor {
+      flex: 1;
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow: hidden;
+    }
+    .ide-chat {
+      width: 260px;
+      flex-shrink: 0;
+      background: #0d0d1a;
+      border-left: 1px solid rgba(255,255,255,0.05);
+      padding: 16px;
+    }
+    .ide-terminal {
+      background: #080810;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      height: 100px;
+    }
+
+    /* Code syntax */
+    .kw { color: #a78bfa; }
+    .fn { color: #60a5fa; }
+    .str { color: #34D07B; }
+    .cmt { color: #4a4a6a; }
+    .num { color: #fbbf24; }
+    .type { color: #f9a8d4; }
+    .var { color: #e4e4f0; }
+
+    /* Cards */
+    .feature-card {
+      background: linear-gradient(145deg, #111120, #0e0e1c);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(52, 208, 123, 0.3), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(52, 208, 123, 0.2);
+      transform: translateY(-2px);
+      background: linear-gradient(145deg, #121225, #0f0f1e);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    /* Comparison table */
+    .comp-table thead th {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #8888a8;
+      text-align: center;
+    }
+    .comp-table tbody td {
+      padding: 14px 20px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      font-size: 14px;
+    }
+    .comp-table tbody tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+    .comp-table .wren-col {
+      background: rgba(52, 208, 123, 0.05);
+    }
+    .comp-table .wren-col:first-child {
+      border-left: 1px solid rgba(52, 208, 123, 0.15);
+    }
+
+    /* Pricing */
+    .pricing-card {
+      background: linear-gradient(145deg, #111120, #0e0e1c);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px;
+      padding: 36px 32px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .pricing-card:hover {
+      transform: translateY(-4px);
+    }
+    .pricing-card.featured {
+      border-color: rgba(52, 208, 123, 0.35);
+      background: linear-gradient(145deg, #12201a, #0e1a14);
+    }
+    .pricing-card.featured::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 21px;
+      background: linear-gradient(135deg, rgba(52, 208, 123, 0.35), transparent 60%);
+      z-index: -1;
+    }
+
+    /* Scroll animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Nav */
+    nav {
+      transition: all 0.3s ease;
+    }
+    nav.scrolled {
+      background: rgba(10, 10, 18, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* Input */
+    input[type="email"] {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: #e4e4f0;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input[type="email"]:focus {
+      border-color: rgba(52, 208, 123, 0.4);
+      background: rgba(52, 208, 123, 0.04);
+    }
+    input[type="email"]::placeholder { color: #4a4a6a; }
+
+    /* Noise texture overlay */
+    .noise {
+      position: relative;
+    }
+    .noise::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+  </style>
+</head>
+<body class="bg-bg antialiased overflow-x-hidden">
+
+  <!-- Navigation -->
+  <nav id="nav" class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <!-- Wren logo mark -->
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="7" fill="#34D07B" fill-opacity="0.15"/>
+          <path d="M7 8l4 12 3-7 3 7 4-12" stroke="#34D07B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="font-semibold text-lg tracking-tight">Wren</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm text-text-muted">
+        <a href="#features" class="hover:text-text transition-colors">Features</a>
+        <a href="#demo" class="hover:text-text transition-colors">Demo</a>
+        <a href="#pricing" class="hover:text-text transition-colors">Pricing</a>
+        <a href="#compare" class="hover:text-text transition-colors">Compare</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="#waitlist" class="hidden md:block text-sm text-text-muted hover:text-text transition-colors">Sign in</a>
+        <a href="#waitlist" class="text-sm font-medium px-4 py-2 rounded-lg bg-accent text-bg hover:bg-accent-dim transition-all btn-glow">
+          Download free
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden">
+    <!-- Background grid -->
+    <div class="absolute inset-0 bg-grid-pattern opacity-100 pointer-events-none"></div>
+    <!-- Radial glow -->
+    <div class="absolute inset-0 bg-glow-radial pointer-events-none"></div>
+    <!-- Top blur orbs -->
+    <div class="absolute top-32 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-accent opacity-5 blur-[120px] pointer-events-none"></div>
+
+    <div class="relative max-w-6xl mx-auto px-6 w-full">
+      <div class="text-center mb-12">
+        <!-- Badge -->
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full text-xs font-medium font-mono bg-accent-glow border border-border-accent text-accent">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-slow"></span>
+          v0.1 — Now in early access
+        </div>
+
+        <!-- Headline -->
+        <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
+          <span class="text-text">The IDE that</span><br/>
+          <span class="text-gradient">thinks with you.</span>
+        </h1>
+
+        <!-- Tagline -->
+        <p class="text-xl md:text-2xl font-mono text-text-muted mb-4 tracking-tight">
+          Your keys.&nbsp; Your models.&nbsp; Your workspace.
+        </p>
+        <p class="text-base md:text-lg text-text-muted max-w-xl mx-auto mb-10 leading-relaxed">
+          Wren is the AI-native IDE for developers who refuse lock-in. Bring your own API keys, pick your models, and work across multiple projects — simultaneously.
+        </p>
+
+        <!-- CTAs -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="#waitlist" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-accent text-bg font-semibold text-base hover:bg-accent-dim transition-all btn-glow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download for macOS
+          </a>
+          <a href="#demo" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-transparent border border-border text-text font-medium text-base hover:border-accent hover:text-accent transition-all">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16 10,8"/>
+            </svg>
+            Watch demo
+          </a>
+        </div>
+
+        <!-- Social proof -->
+        <div class="mt-10 flex items-center justify-center gap-6 text-sm text-text-dim">
+          <span class="flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Free forever plan</span>
+          </span>
+          <span class="w-px h-4 bg-border"></span>
+          <span>No credit card required</span>
+          <span class="w-px h-4 bg-border"></span>
+          <span>Works with Claude, GPT-4, Gemini</span>
+        </div>
+      </div>
+
+      <!-- IDE Mockup -->
+      <div id="demo" class="ide-window max-w-5xl mx-auto mt-4 animate-float" style="animation-delay: 0s;">
+        <!-- Titlebar -->
+        <div class="ide-titlebar">
+          <div class="ide-dot bg-red-500 opacity-70"></div>
+          <div class="ide-dot bg-yellow-500 opacity-70"></div>
+          <div class="ide-dot bg-green-500 opacity-70"></div>
+          <div class="ml-3 flex gap-1">
+            <div class="ide-tab">main.ts</div>
+            <div class="ide-inactive-tab">api.ts</div>
+            <div class="ide-inactive-tab">schema.ts</div>
+          </div>
+          <div class="ml-auto flex items-center gap-3 text-xs text-text-dim font-mono">
+            <span class="flex items-center gap-1 text-accent">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+              Claude 3.7
+            </span>
+            <span>TypeScript</span>
+          </div>
+        </div>
+
+        <!-- IDE Body -->
+        <div class="flex" style="height: 380px;">
+          <!-- Sidebar -->
+          <div class="ide-sidebar hidden md:block">
+            <div class="text-xs text-text-dim font-mono mb-3 uppercase tracking-wider px-2">Explorer</div>
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-accent bg-accent-glow">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path fill="none" stroke="currentColor" stroke-width="2" d="M14 2v6h6"/></svg>
+                main.ts
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-text-dim hover:text-text-muted cursor-pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path fill="none" stroke="currentColor" stroke-width="2" d="M14 2v6h6"/></svg>
+                api.ts
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-text-dim hover:text-text-muted cursor-pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                components/
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-text-dim hover:text-text-muted cursor-pointer pl-6">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+                Button.tsx
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-text-dim hover:text-text-muted cursor-pointer pl-6">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+                Modal.tsx
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-text-dim hover:text-text-muted cursor-pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                tests/
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono text-text-dim hover:text-text-muted cursor-pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+                schema.ts
+              </div>
+            </div>
+          </div>
+
+          <!-- Editor + Terminal -->
+          <div class="ide-main">
+            <div class="ide-editor overflow-auto">
+              <pre class="text-sm leading-relaxed"><code><span class="cmt">// Wren IDE — context-aware refactoring in action</span>
+<span class="kw">import</span> <span class="var">{ createServer }</span> <span class="kw">from</span> <span class="str">'wren/agent'</span>
+<span class="kw">import</span> <span class="kw">type</span> <span class="var">{ AgentContext, Snapshot }</span> <span class="kw">from</span> <span class="str">'./types'</span>
+
+<span class="kw">const</span> <span class="fn">agent</span> <span class="var">=</span> <span class="fn">createServer</span><span class="var">({</span>
+  <span class="var">model:</span> <span class="str">'claude-3-7-sonnet'</span><span class="var">,</span>
+  <span class="var">keySource:</span> <span class="str">'env:ANTHROPIC_API_KEY'</span><span class="var">,</span>
+  <span class="var">features:</span> <span class="var">{</span>
+    <span class="var">agentic:</span> <span class="num">true</span><span class="var">,</span>
+    <span class="var">snapshots:</span> <span class="num">true</span><span class="var">,</span>   <span class="cmt">// auto rollback on failure</span>
+    <span class="var">bridge:</span> <span class="str">'browser'</span>  <span class="cmt">// live preview</span>
+  <span class="var">}</span>
+<span class="var">})</span>
+
+<span class="kw">async function</span> <span class="fn">handleRefactor</span><span class="var">(</span>
+  <span class="var">ctx:</span> <span class="type">AgentContext</span><span class="var">,</span>
+  <span class="var">snap:</span> <span class="type">Snapshot</span>
+<span class="var">) {</span>
+  <span class="kw">const</span> <span class="var">result</span> <span class="var">=</span> <span class="kw">await</span> <span class="var">ctx</span><span class="var">.</span><span class="fn">run</span><span class="var">({</span>
+    <span class="var">task:</span> <span class="str">'refactor to async/await pattern'</span><span class="var">,</span>
+    <span class="var">context:</span> <span class="var">snap</span><span class="var">.</span><span class="fn">capture</span><span class="var">()</span>  <span class="cmt">// full workspace snapshot</span>
+  <span class="var">})</span>
+  <span class="kw">return</span> <span class="var">result</span>
+<span class="var">}</span></code></pre>
+            </div>
+            <!-- Terminal -->
+            <div class="ide-terminal">
+              <div class="text-text-dim mb-1">▸ wren agent run</div>
+              <div class="text-accent">✓ Context captured (847 tokens)</div>
+              <div class="text-text-muted">✓ Refactoring 3 files...</div>
+              <div class="text-text-dim">✓ Snapshot saved — rollback available</div>
+            </div>
+          </div>
+
+          <!-- AI Chat Panel -->
+          <div class="ide-chat hidden lg:block">
+            <div class="text-xs text-text-dim font-mono uppercase tracking-wider mb-3">AI Chat</div>
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-2 h-2 rounded-full bg-accent animate-pulse-slow"></div>
+              <span class="text-xs text-accent font-mono">Claude 3.7</span>
+              <span class="ml-auto text-xs text-text-dim">BYOK</span>
+            </div>
+            <!-- Messages -->
+            <div class="space-y-3 text-xs">
+              <div class="bg-bg-3 rounded-lg p-2.5 text-text-muted leading-relaxed">
+                Refactor <span class="text-accent font-mono">handleRefactor</span> to support multiple model providers
+              </div>
+              <div class="rounded-lg p-2.5 text-text leading-relaxed" style="background: rgba(52,208,123,0.08); border: 1px solid rgba(52,208,123,0.15)">
+                <span class="text-accent font-semibold block mb-1">Wren</span>
+                I'll update the function to accept a <span class="font-mono text-accent">ModelProvider</span> interface. This keeps it agnostic across Claude, GPT-4 and Gemini...
+              </div>
+              <div class="bg-bg-3 rounded-lg p-2.5 text-text-muted leading-relaxed">
+                Make it switch providers without losing context
+              </div>
+              <div class="rounded-lg p-2.5 text-text leading-relaxed" style="background: rgba(52,208,123,0.08); border: 1px solid rgba(52,208,123,0.15)">
+                <span class="text-accent font-semibold block mb-1">Wren</span>
+                Done — using Context Bridge to serialize state before switching. Your conversation history transfers cleanly.
+              </div>
+            </div>
+            <!-- Input -->
+            <div class="mt-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07)">
+              <span class="text-xs text-text-dim flex-1 font-mono">Ask anything...</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9 22,2"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-28 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full text-xs font-mono bg-accent-glow border border-border-accent text-accent">
+          Features
+        </div>
+        <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          Built for the way<br/><span class="text-gradient-accent">you actually work.</span>
+        </h2>
+        <p class="text-text-muted text-lg max-w-lg mx-auto">
+          Every feature designed around one principle: the developer stays in control.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Feature 1 -->
+        <div class="feature-card reveal">
+          <div class="w-10 h-10 rounded-xl bg-accent-glow border border-border-accent flex items-center justify-center mb-5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="9" height="9" rx="1"/><rect x="13" y="3" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-2">Multi-project Simultaneous</h3>
+          <p class="text-text-muted text-sm leading-relaxed">Work across multiple codebases in parallel. Each project has isolated context, dependencies, and AI state. No more context switching.</p>
+          <div class="mt-4 font-mono text-xs text-accent bg-accent-glow px-3 py-1.5 rounded-lg inline-block">4 projects open</div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card reveal">
+          <div class="w-10 h-10 rounded-xl bg-accent-glow border border-border-accent flex items-center justify-center mb-5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-2">BYOK — Bring Your Own Key</h3>
+          <p class="text-text-muted text-sm leading-relaxed">Your API keys stay on your machine. We never proxy them, never see them. Direct calls to Anthropic, OpenAI, Google. Zero middleman markup.</p>
+          <div class="mt-4 font-mono text-xs text-text-dim bg-bg-3 px-3 py-1.5 rounded-lg inline-block">env:ANTHROPIC_API_KEY ✓</div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card reveal">
+          <div class="w-10 h-10 rounded-xl bg-accent-glow border border-border-accent flex items-center justify-center mb-5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-2">Multi-provider AI</h3>
+          <p class="text-text-muted text-sm leading-relaxed">Claude 3.7, GPT-4o, Gemini 1.5 Pro — switch per task, per file, or per conversation. Best model for each job, no restarting required.</p>
+          <div class="mt-4 flex gap-2">
+            <span class="font-mono text-xs px-2 py-1 rounded bg-bg-3 text-text-dim">Claude</span>
+            <span class="font-mono text-xs px-2 py-1 rounded bg-bg-3 text-text-dim">GPT-4</span>
+            <span class="font-mono text-xs px-2 py-1 rounded bg-bg-3 text-text-dim">Gemini</span>
+          </div>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card reveal">
+          <div class="w-10 h-10 rounded-xl bg-accent-glow border border-border-accent flex items-center justify-center mb-5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-2">Agentic Mode + Snapshots</h3>
+          <p class="text-text-muted text-sm leading-relaxed">Let Wren execute multi-step tasks autonomously. Every action is snapshotted — one click to rollback any change the agent made.</p>
+          <div class="mt-4 font-mono text-xs text-accent bg-accent-glow px-3 py-1.5 rounded-lg inline-block">↩ 3 snapshots available</div>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card reveal">
+          <div class="w-10 h-10 rounded-xl bg-accent-glow border border-border-accent flex items-center justify-center mb-5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-2">Browser Bridge</h3>
+          <p class="text-text-muted text-sm leading-relaxed">Live preview runs in a real browser, not a sandboxed iframe. Wren sees your actual DOM, can click elements, and reads console errors in real-time.</p>
+          <div class="mt-4 font-mono text-xs text-text-dim bg-bg-3 px-3 py-1.5 rounded-lg inline-block">localhost:3000 bridged</div>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card reveal">
+          <div class="w-10 h-10 rounded-xl bg-accent-glow border border-border-accent flex items-center justify-center mb-5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-2">Context Bridge</h3>
+          <p class="text-text-muted text-sm leading-relaxed">Switch AI providers mid-conversation without losing a single token of context. Your conversation history and code state transfer seamlessly.</p>
+          <div class="mt-4 font-mono text-xs text-accent bg-accent-glow px-3 py-1.5 rounded-lg inline-block">Context preserved ✓</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="py-28 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full text-xs font-mono bg-accent-glow border border-border-accent text-accent">
+          Pricing
+        </div>
+        <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          Pay for Wren, not for<br/><span class="text-gradient-accent">someone else's API calls.</span>
+        </h2>
+        <p class="text-text-muted text-lg">Your keys, your spend. We charge only for the product.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Free -->
+        <div class="pricing-card reveal">
+          <div class="text-sm text-text-muted font-medium mb-2">Free</div>
+          <div class="flex items-end gap-1 mb-6">
+            <span class="text-5xl font-bold">€0</span>
+            <span class="text-text-muted mb-2">/month</span>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              1 project at a time
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              BYOK (all providers)
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Agentic mode (5 runs/day)
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Browser Bridge
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-dim">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Multi-project
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-dim">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Context Bridge
+            </li>
+          </ul>
+          <a href="#waitlist" class="block text-center py-3 rounded-xl border border-border text-text-muted text-sm font-medium hover:border-accent hover:text-accent transition-all">
+            Get started free
+          </a>
+        </div>
+
+        <!-- Pro (featured) -->
+        <div class="pricing-card featured reveal" style="transform: scale(1.03);">
+          <div class="absolute top-5 right-5 text-xs font-medium px-3 py-1 rounded-full bg-accent text-bg">Popular</div>
+          <div class="text-sm text-accent font-medium mb-2">Pro</div>
+          <div class="flex items-end gap-1 mb-6">
+            <span class="text-5xl font-bold text-gradient-accent">€15</span>
+            <span class="text-text-muted mb-2">/month</span>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-sm text-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              <strong>Unlimited</strong>&nbsp;projects
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              BYOK (all providers)
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Agentic mode (unlimited)
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Browser Bridge
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Context Bridge
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Snapshot history (30 days)
+            </li>
+          </ul>
+          <a href="#waitlist" class="block text-center py-3 rounded-xl bg-accent text-bg text-sm font-semibold hover:bg-accent-dim transition-all btn-glow">
+            Start Pro trial
+          </a>
+        </div>
+
+        <!-- Team -->
+        <div class="pricing-card reveal">
+          <div class="text-sm text-text-muted font-medium mb-2">Team</div>
+          <div class="flex items-end gap-1 mb-6">
+            <span class="text-5xl font-bold">€30</span>
+            <span class="text-text-muted mb-2">/user/month</span>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Everything in Pro
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Shared project workspaces
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Team API key management
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Audit logs
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Priority support
+            </li>
+            <li class="flex items-center gap-3 text-sm text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D07B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              SSO / SAML
+            </li>
+          </ul>
+          <a href="#waitlist" class="block text-center py-3 rounded-xl border border-border text-text-muted text-sm font-medium hover:border-accent hover:text-accent transition-all">
+            Contact sales
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section id="compare" class="py-28 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full text-xs font-mono bg-accent-glow border border-border-accent text-accent">
+          Compare
+        </div>
+        <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          Why developers<br/><span class="text-gradient-accent">switch to Wren.</span>
+        </h2>
+      </div>
+
+      <div class="rounded-2xl overflow-hidden border border-border reveal">
+        <table class="comp-table w-full">
+          <thead style="background: #111120;">
+            <tr>
+              <th class="text-left px-6 py-4 text-sm font-semibold text-text-muted">Feature</th>
+              <th class="text-accent wren-col" style="background: rgba(52,208,123,0.07); border-left: 1px solid rgba(52,208,123,0.2); border-right: 1px solid rgba(52,208,123,0.2);">
+                <div class="flex items-center justify-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 28 28" fill="none">
+                    <path d="M7 8l4 12 3-7 3 7 4-12" stroke="#34D07B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Wren
+                </div>
+              </th>
+              <th>Cursor</th>
+              <th>Windsurf</th>
+              <th class="hidden md:table-cell">Continue.dev</th>
+            </tr>
+          </thead>
+          <tbody style="background: #0e0e1a;">
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">BYOK (no proxy)</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold">✓</span>
+              </td>
+              <td><span class="text-text-dim text-sm">Partial</span></td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td class="hidden md:table-cell"><span class="text-accent font-semibold">✓</span></td>
+            </tr>
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">Multi-project simultaneous</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold">✓</span>
+              </td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td class="hidden md:table-cell"><span class="text-text-dim">✗</span></td>
+            </tr>
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">Agentic with rollback</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold">✓</span>
+              </td>
+              <td><span class="text-text-dim text-sm">Partial</span></td>
+              <td><span class="text-text-dim text-sm">Partial</span></td>
+              <td class="hidden md:table-cell"><span class="text-text-dim">✗</span></td>
+            </tr>
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">Browser Bridge</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold">✓</span>
+              </td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td class="hidden md:table-cell"><span class="text-text-dim">✗</span></td>
+            </tr>
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">Context Bridge (multi-LLM)</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold">✓</span>
+              </td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td><span class="text-text-dim">✗</span></td>
+              <td class="hidden md:table-cell"><span class="text-accent font-semibold">✓</span></td>
+            </tr>
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">Vendor lock-in</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold text-sm">None</span>
+              </td>
+              <td><span class="text-text-dim text-sm">High</span></td>
+              <td><span class="text-text-dim text-sm">High</span></td>
+              <td class="hidden md:table-cell"><span class="text-text-dim text-sm">Low</span></td>
+            </tr>
+            <tr>
+              <td class="text-left px-6 text-text-muted text-sm">Starting price</td>
+              <td class="wren-col" style="border-left: 1px solid rgba(52,208,123,0.1); border-right: 1px solid rgba(52,208,123,0.1);">
+                <span class="text-accent font-semibold">Free</span>
+              </td>
+              <td><span class="text-text-dim">$20/mo</span></td>
+              <td><span class="text-text-dim">$15/mo</span></td>
+              <td class="hidden md:table-cell"><span class="text-accent font-semibold">Free</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Waitlist / CTA -->
+  <section id="waitlist" class="py-28 px-6">
+    <div class="max-w-2xl mx-auto text-center reveal">
+      <!-- Glow -->
+      <div class="absolute left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-accent opacity-5 blur-[100px] pointer-events-none -z-10"></div>
+
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full text-xs font-mono bg-accent-glow border border-border-accent text-accent">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-slow"></span>
+        Early access open
+      </div>
+      <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-5">
+        Ready to take back<br/><span class="text-gradient">control?</span>
+      </h2>
+      <p class="text-text-muted text-lg mb-10 leading-relaxed">
+        Download Wren free. No account required to start. Connect your own API keys and ship faster.
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto mb-6">
+        <input
+          type="email"
+          placeholder="your@email.com"
+          class="flex-1 px-4 py-3 text-sm"
+        />
+        <button class="flex-shrink-0 px-6 py-3 rounded-xl bg-accent text-bg font-semibold text-sm hover:bg-accent-dim transition-all btn-glow whitespace-nowrap">
+          Join waitlist
+        </button>
+      </div>
+
+      <p class="text-xs text-text-dim">
+        Or <a href="#" class="text-accent hover:underline">download directly for macOS →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-border py-16 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between gap-12 mb-12">
+        <!-- Brand -->
+        <div class="max-w-xs">
+          <div class="flex items-center gap-2 mb-4">
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="28" height="28" rx="7" fill="#34D07B" fill-opacity="0.15"/>
+              <path d="M7 8l4 12 3-7 3 7 4-12" stroke="#34D07B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="font-semibold">Wren IDE</span>
+          </div>
+          <p class="text-sm text-text-dim leading-relaxed">The AI-native IDE that keeps you in control. Built for developers who take their tools seriously.</p>
+        </div>
+
+        <!-- Links -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+          <div>
+            <h4 class="text-sm font-semibold mb-4">Product</h4>
+            <ul class="space-y-2 text-sm text-text-dim">
+              <li><a href="#features" class="hover:text-text transition-colors">Features</a></li>
+              <li><a href="#pricing" class="hover:text-text transition-colors">Pricing</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">Changelog</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">Roadmap</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold mb-4">Developers</h4>
+            <ul class="space-y-2 text-sm text-text-dim">
+              <li><a href="#" class="hover:text-text transition-colors">Documentation</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">API Reference</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">GitHub</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">Discord</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold mb-4">Company</h4>
+            <ul class="space-y-2 text-sm text-text-dim">
+              <li><a href="#" class="hover:text-text transition-colors">About</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">Blog</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">Privacy</a></li>
+              <li><a href="#" class="hover:text-text transition-colors">Terms</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-border">
+        <p class="text-xs text-text-dim">© 2026 Wren IDE. All rights reserved.</p>
+        <div class="flex items-center gap-5">
+          <a href="#" class="text-text-dim hover:text-text transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+          </a>
+          <a href="#" class="text-text-dim hover:text-text transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+          </a>
+          <a href="#" class="text-text-dim hover:text-text transition-colors">
+            <svg width="18" height="18" viewBox="0 0 127.14 96.36" fill="currentColor"><path d="M107.7 8.07A105.15 105.15 0 0081.47 0a72.06 72.06 0 00-3.36 6.83 97.68 97.68 0 00-29.11 0A72.37 72.37 0 0045.64 0a105.89 105.89 0 00-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0032.17 16.15 77.7 77.7 0 006.89-11.11 68.42 68.42 0 01-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0064.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 01-10.87 5.19 77 77 0 006.89 11.1 105.25 105.25 0 0032.19-16.14c2.64-27.38-4.51-51.11-18.9-72.15zM42.45 65.69C36.18 65.69 31 60 31 53s5-12.74 11.43-12.74S54 46 53.89 53s-5.05 12.69-11.44 12.69zm42.24 0C78.41 65.69 73.25 60 73.25 53s5-12.74 11.44-12.74S96.23 46 96.12 53s-5.04 12.69-11.43 12.69z"/></svg>
+          </a>
+        </div>
+        <!-- Newsletter -->
+        <div class="flex items-center gap-2">
+          <input type="email" placeholder="Newsletter signup" class="text-xs px-3 py-2 w-40" />
+          <button class="text-xs px-3 py-2 rounded-lg bg-accent text-bg font-medium hover:bg-accent-dim transition-all">Subscribe</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('nav')
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20)
+    })
+
+    // Reveal on scroll
+    const reveals = document.querySelectorAll('.reveal')
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.classList.add('visible')
+          }, i * 80)
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
+    reveals.forEach(el => observer.observe(el))
+
+    // Smooth anchor scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        const target = document.querySelector(anchor.getAttribute('href'))
+        if (target) {
+          e.preventDefault()
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    })
+  </script>
+</body>
+</html>
