@@ -1,154 +1,187 @@
+<div align="center">
+
 # Wren IDE
 
-> **Your keys. Your models. Your workspace.**
+**Your Keys. Your Models. Your Workspace.**
 
-Wren is a BYOK-first, multi-provider AI, multi-project desktop IDE built with Electron + React + TypeScript.
+The AI-native desktop IDE for serious developers — multi-model, multi-project, zero lock-in.
+
+[![License](https://img.shields.io/badge/license-private-red.svg)](#)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue.svg)](#)
+[![Made with Electron](https://img.shields.io/badge/built%20with-Electron-47848F.svg)](https://www.electronjs.org/)
+
+[Download](#installation) · [Quick Start](#quick-start) · [BYOK Setup](#byok-setup) · [Docs](#documentation) · [Discord Community](#community)
+
+</div>
 
 ---
 
-## Prerequisites
+## What is Wren?
 
-| Tool    | Version |
-|---------|---------|
-| Node.js | ≥ 20    |
-| pnpm    | ≥ 9     |
+Wren is a desktop IDE built on a single principle: **you own your AI stack**.
 
-Install pnpm if needed:
+- **Bring Your Own Keys** — connect directly to Claude, GPT-4, Mistral, Gemini. No proxy, no markup.
+- **Multi-model** — switch models per task, per project, per conversation.
+- **Multi-project** — manage multiple codebases from a single workspace hub.
+- **Agentic** — not just autocomplete. Full agent loops with context awareness.
+- **Private** — your code never touches our servers. Your keys, your calls.
+
+---
+
+## Installation
+
+### Download (Recommended)
+
+| Platform | Download |
+|----------|----------|
+| macOS (Apple Silicon) | [Wren-mac-arm64.dmg](#) |
+| macOS (Intel) | [Wren-mac-x64.dmg](#) |
+| Windows | [Wren-Setup-win-x64.exe](#) |
+| Linux | [Wren-linux-x64.AppImage](#) |
+
+### Build from Source
+
+**Prerequisites:**
+
+| Tool | Version |
+|------|---------|
+| Node.js | ≥ 20 |
+| pnpm | ≥ 9 |
 
 ```bash
+# Install pnpm if needed
 npm install -g pnpm
+
+# Clone and install
+git clone https://github.com/your-org/wren.git
+cd wren
+pnpm install
+
+# Run in development mode
+pnpm dev
+
+# Build for distribution
+pnpm dist
 ```
 
 ---
 
-## Setup
+## Quick Start
 
-```bash
-# Install all dependencies (all packages resolved via pnpm workspaces)
-pnpm install
-```
+1. **Download and install** Wren for your platform
+2. **Open Wren** — you'll see the onboarding wizard
+3. **Add your first AI key** (see [BYOK Setup](#byok-setup) below)
+4. **Create a project** — point Wren to your codebase
+5. **Start coding** with AI assistance
+
+---
+
+## BYOK Setup
+
+Wren never stores your keys on our servers. Keys are stored locally, encrypted.
+
+### Supported Providers
+
+| Provider | Models | Get API Key |
+|----------|--------|-------------|
+| Anthropic | Claude 3.5 Sonnet, Claude 3 Opus, Haiku | [console.anthropic.com](https://console.anthropic.com) |
+| OpenAI | GPT-4o, GPT-4 Turbo, GPT-3.5 | [platform.openai.com](https://platform.openai.com) |
+| Google | Gemini 1.5 Pro, Gemini Flash | [aistudio.google.com](https://aistudio.google.com) |
+| Mistral | Mistral Large, Medium, Small | [console.mistral.ai](https://console.mistral.ai) |
+
+### How to Add a Key
+
+1. Open Wren → **Settings** → **AI Providers**
+2. Click **Add Provider**
+3. Select your provider from the list
+4. Paste your API key — it's validated instantly
+5. Set as default or assign to specific projects
+
+**Cost tip:** Claude 3.5 Haiku and GPT-4o-mini are ideal for quick completions. Reserve the bigger models for complex agent tasks.
+
+---
+
+## Documentation
+
+- [Getting Started Guide](docs/getting-started.md) — First project in 5 minutes
+- [FAQ](docs/faq.md) — Top questions answered
+- [Discord Community](#community) — Ask anything
+
+---
+
+## Community
+
+Join the Wren Discord — the place to get help, share what you've built, and stay updated.
+
+**→ [discord.gg/wren](#)** _(link coming soon)_
+
+Channels you'll use most:
+- `#help` — setup questions, troubleshooting
+- `#showcase` — show what you've built
+- `#byok-tips` — share provider configs and cost optimization tips
+- `#announcements` — release notes and roadmap updates
 
 ---
 
 ## Development
 
 ```bash
+# Install dependencies
+pnpm install
+
+# Development mode (HMR + hot reload)
 pnpm dev
-```
 
-This starts:
-1. **Vite dev server** for the renderer at `http://localhost:5173` (with HMR)
-2. **TypeScript compilation** for `main`, `preload`, and `shared`
-3. **Electron** loading the Vite URL
-
-The app window opens automatically. Edit files in `packages/renderer/src` and changes reflect instantly via hot reload.
-
----
-
-## Build
-
-```bash
+# Build all packages
 pnpm build
-```
 
-Compiles all packages in dependency order:
-1. `@wren/shared` → TypeScript types + IPC contracts
-2. `@wren/preload` → Electron contextBridge script
-3. `@wren/main` → Electron main process
-4. `@wren/renderer` → React app via Vite
-
----
-
-## Distribution
-
-```bash
+# Build distributable installer
 pnpm dist
-```
 
-Runs `pnpm build` then `electron-builder`. Outputs to `release/`.
-
-Targets by platform:
-- **macOS**: `.dmg` (arm64 + x64)
-- **Windows**: NSIS installer (x64)
-- **Linux**: AppImage (x64)
-
----
-
-## Lint
-
-```bash
+# Lint
 pnpm lint
 ```
 
----
-
-## Project Structure
+### Project Structure
 
 ```
 wren/
 ├── packages/
-│   ├── main/          # Electron main process (Node.js context)
-│   │   └── src/
-│   │       └── index.ts   # App lifecycle, BrowserWindow, IPC handlers
-│   ├── renderer/      # React frontend (browser context)
-│   │   ├── src/
-│   │   │   ├── main.tsx       # React entry point
-│   │   │   ├── App.tsx        # Root component
-│   │   │   └── wren.d.ts      # window.wren type augmentation
-│   │   ├── index.html
-│   │   └── vite.config.ts
-│   ├── shared/        # Shared types and IPC channel contracts
-│   │   └── src/
-│   │       ├── ipc.ts         # IpcChannelMap — source of truth for all IPC
-│   │       └── index.ts
-│   └── preload/       # Electron preload script (contextBridge)
-│       └── src/
-│           └── index.ts       # Exposes window.wren with type-safe invoke()
-├── scripts/
-│   └── dev.mjs        # Dev orchestrator (Vite + Electron)
-├── electron-builder.yml
-├── eslint.config.mjs
-├── .prettierrc
-├── tsconfig.base.json
-└── package.json       # Workspace root, shared dev dependencies
+│   ├── main/       # Electron main process (Node.js)
+│   ├── renderer/   # React frontend (browser context)
+│   ├── shared/     # Shared types and IPC contracts
+│   └── preload/    # Electron contextBridge
+├── docs/           # User documentation
+├── site/           # Landing page
+└── scripts/        # Build and dev orchestration
 ```
 
----
-
-## Architecture
+### Architecture
 
 ```mermaid
 graph TD
-    subgraph Renderer["packages/renderer (browser context)"]
+    subgraph Renderer["packages/renderer (browser)"]
         R[React App] -->|window.wren.invoke| PL[window.wren API]
     end
-
-    subgraph Preload["packages/preload (isolated context)"]
+    subgraph Preload["packages/preload (isolated)"]
         PL -->|ipcRenderer.invoke| CB[contextBridge]
     end
-
-    subgraph Main["packages/main (Node.js context)"]
+    subgraph Main["packages/main (Node.js)"]
         CB -->|ipcMain.handle| H[IPC Handlers]
         H --> APP[Electron App APIs]
     end
-
-    subgraph Shared["packages/shared (types only)"]
+    subgraph Shared["packages/shared (types)"]
         T[IpcChannelMap] -.->|types| R
         T -.->|types| PL
         T -.->|types| H
     end
 ```
 
-### Security Model
-
-- `contextIsolation: true` — renderer runs in isolated context
-- `nodeIntegration: false` — renderer has no Node.js access
-- `sandbox: true` — renderer process sandboxed
-- All IPC goes through `contextBridge.exposeInMainWorld` → no direct Node.js in renderer
+**Security model:** `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` — renderer is fully sandboxed.
 
 ### Adding a New IPC Channel
 
-1. Add the channel to `packages/shared/src/ipc.ts`:
+1. Define in `packages/shared/src/ipc.ts`:
 
 ```typescript
 export interface IpcChannelMap {
@@ -156,11 +189,10 @@ export interface IpcChannelMap {
     request: { param: string };
     response: { result: number };
   };
-  // ...existing channels
 }
 ```
 
-2. Register the handler in `packages/main/src/index.ts`:
+2. Register handler in `packages/main/src/index.ts`:
 
 ```typescript
 handle("my:channel", (_event, { param }) => {
@@ -168,25 +200,25 @@ handle("my:channel", (_event, { param }) => {
 });
 ```
 
-3. Call it from the renderer:
+3. Call from renderer:
 
 ```typescript
 const { result } = await window.wren.invoke("my:channel", { param: "hello" });
 ```
 
-TypeScript enforces correct payload shapes end-to-end — no `any` casts needed.
+TypeScript enforces correct payload shapes end-to-end.
 
 ---
 
 ## Naming Conventions
 
-| Area           | Convention                                      |
-|----------------|-------------------------------------------------|
-| Files          | `kebab-case.ts` for utilities, `PascalCase.tsx` for React components |
-| Components     | `PascalCase`, one component per file             |
-| CSS Modules    | `Component.module.css`, classes in `camelCase`   |
-| IPC channels   | `domain:action` (e.g., `app:get-version`)        |
-| Package names  | `@wren/<name>`                                   |
+| Area | Convention |
+|------|-----------|
+| Files | `kebab-case.ts` for utilities, `PascalCase.tsx` for React components |
+| Components | `PascalCase`, one component per file |
+| CSS Modules | `Component.module.css`, classes in `camelCase` |
+| IPC channels | `domain:action` (e.g., `app:get-version`) |
+| Package names | `@wren/<name>` |
 
 ---
 
