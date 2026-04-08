@@ -334,6 +334,11 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
             setMessages(msgs.map((m) => ({ ...m, streaming: false, toolEvents: [] })));
           }}
           onNewSession={() => {
+            // Archive current messages before starting fresh
+            if (messages.length > 0) {
+              const archiveId = `${sessionId}-${Date.now()}`;
+              saveMessages(archiveId, messages);
+            }
             setMessages([]);
             localStorage.removeItem(`wren:chatMessages:${sessionId}`);
           }}
@@ -492,7 +497,11 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
           <button
             className={styles.newSessionBtn}
             onClick={() => {
-              // Clear messages for a fresh chat (new CLI session)
+              // Archive current messages before starting fresh
+              if (messages.length > 0) {
+                const archiveId = `${sessionId}-${Date.now()}`;
+                saveMessages(archiveId, messages);
+              }
               setMessages([]);
               localStorage.removeItem(`wren:chatMessages:${sessionId}`);
             }}

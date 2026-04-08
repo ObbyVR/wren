@@ -41,21 +41,27 @@ function buildHistoryEntries(): HistoryEntry[] {
       const firstUser = msgs.find((m) => m.role === "user");
       const preview = firstUser?.content.slice(0, 60) ?? msgs[0].content.slice(0, 60);
 
-      // Try to get session metadata
-      let label = sessionId;
+      // Try to get session metadata — match exact or base ID (for archived sessions)
+      // Archived sessions have format "{baseId}-{timestamp}"
+      const baseId = sessionId.replace(/-\d{13}$/, ""); // strip archive timestamp
+      let label = "";
       let providerId = "anthropic";
       for (let j = 0; j < localStorage.length; j++) {
         const sKey = localStorage.key(j);
         if (!sKey?.startsWith("wren:chatSessions:")) continue;
         try {
           const sessions = JSON.parse(localStorage.getItem(sKey) ?? "[]");
-          const match = sessions.find((s: { id: string }) => s.id === sessionId);
+          const match = sessions.find((s: { id: string }) => s.id === sessionId || s.id === baseId);
           if (match) {
-            label = match.label ?? sessionId;
+            label = match.label ?? "";
             providerId = match.providerId ?? "anthropic";
             break;
           }
         } catch { /* ignore */ }
+      }
+      // For archived sessions, add a short label if none found
+      if (!label) {
+        label = baseId !== sessionId ? `Archived` : sessionId;
       }
 
       entries.push({
