@@ -343,7 +343,7 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
           onClick={() => setShowHistory((v) => !v)}
           title="Chat history"
         >
-          &#x29D6;
+          &#x2630;
         </button>
 
         {/* Agentic mode indicator */}

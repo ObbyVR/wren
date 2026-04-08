@@ -49,14 +49,14 @@
 .toolbar {
   display: flex;
   flex-direction: column;
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
   flex-shrink: 0;
   background: var(--bg-sidebar, var(--bg-base));
   border-right: 1px solid var(--border);
   padding: 8px 0;
-  gap: 2px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -64,14 +64,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: none;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   border-radius: var(--radius, 4px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   transition: color 0.12s, background 0.12s;
 }
 .toolBtn:hover {
