@@ -262,6 +262,22 @@ function saveCliSession(chatSessionId: string, sessionId: string, contextSent: b
   } catch { /* ignore */ }
 }
 
+// ── Active process tracking (for kill on new message) ────────────────────────
+
+const activeProcesses = new Map<string, ChildProcess>();
+
+/**
+ * Kill any running CLI process for a chat session.
+ * Safe to call even if no process is running.
+ */
+function killActiveProcess(chatSessionId: string): void {
+  const proc = activeProcesses.get(chatSessionId);
+  if (proc && !proc.killed) {
+    proc.kill("SIGTERM");
+  }
+  activeProcesses.delete(chatSessionId);
+}
+
 // ── Main entry point ─────────────────────────────────────────────────────────
 
 /**
@@ -291,6 +307,9 @@ export function sendViaCli(
   },
   win: BrowserWindow | null,
 ): void {
+  // Kill any still-running process for this session (user sent a new message)
+  killActiveProcess(opts.chatSessionId);
+
   const cliName = PROVIDER_TO_CLI[opts.providerId];
   if (!cliName) {
     win?.webContents.send("ai:stream-error", {
@@ -351,6 +370,9 @@ export function sendViaCli(
     return;
   }
 
+  // Track this process so it can be killed if user sends a new message
+  activeProcesses.set(opts.chatSessionId, proc);
+
   // Send prompt via stdin (Claude) or as arg (Codex — already in args)
   if (config.promptViaStdin && proc.stdin) {
     proc.stdin.write(finalPrompt);
@@ -399,7 +421,9 @@ export function sendViaCli(
     }
   });
 
-  proc.on("close", (code) => {
+  proc.on("close", (code, signal) => {
+    activeProcesses.delete(opts.chatSessionId);
+
     // Flush remaining buffer
     if (lineBuffer.trim()) {
       const parsed = config.parseLine(lineBuffer);
@@ -414,8 +438,22 @@ export function sendViaCli(
       if (parsed?.sessionId) lastSessionId = parsed.sessionId;
     }
 
+    // Save session even if killed (preserves sessionId for --resume)
     if (lastSessionId) {
       saveCliSession(opts.chatSessionId, lastSessionId, true);
+    }
+
+    // Killed by us (new message sent) — mark as interrupted, not error
+    if (signal === "SIGTERM") {
+      if (sentText) {
+        win?.webContents.send("ai:stream-chunk", { requestId, text: "\n\n*[interrupted]*" });
+      }
+      win?.webContents.send("ai:stream-done", {
+        requestId,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+      });
+      return;
     }
 
     if (code !== 0 && !sentText) {
