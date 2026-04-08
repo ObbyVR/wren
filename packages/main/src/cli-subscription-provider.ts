@@ -50,7 +50,7 @@ const CLI_CONFIGS: Record<string, CliConfig> = {
       `${process.env.HOME}/.claude/local/claude`,
     ],
     buildArgs: (_prompt, opts) => {
-      const args = ["--print", "-", "--output-format", "stream-json", "--dangerously-skip-permissions"];
+      const args = ["--print", "-", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"];
       if (opts.sessionId) args.push("--resume", opts.sessionId);
       if (opts.model) args.push("--model", opts.model);
       return args;
