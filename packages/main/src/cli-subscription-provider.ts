@@ -9,9 +9,23 @@
  */
 
 import { spawn, type ChildProcess } from "child_process";
-import { accessSync, readFileSync, writeFileSync, constants } from "fs";
+import { accessSync, readFileSync, writeFileSync, existsSync, constants } from "fs";
 import path from "path";
 import { app, type BrowserWindow } from "electron";
+
+/** Path to Wren AI instructions file (injected as system prompt context) */
+function getWrenInstructionsPath(): string {
+  // In production: bundled alongside main process code
+  const bundledPath = path.join(__dirname, "../wren-ai-instructions.md");
+  if (existsSync(bundledPath)) return bundledPath;
+  // Dev fallback
+  const devPath = path.join(__dirname, "../../packages/main/wren-ai-instructions.md");
+  if (existsSync(devPath)) return devPath;
+  return "";
+}
+
+/** Wren context prefix for CLIs that don't support --append-system-prompt-file */
+const WREN_CONTEXT_PREFIX = `[You are inside Wren IDE. NEVER open a browser. Use Wren's built-in Preview panel for visual output. Write files and tell the user to check Preview. Keep responses concise.]\n\n`;
 
 // ── CLI Configuration ────────────────────────────────────────────────────────
 
@@ -50,6 +64,9 @@ const CLI_CONFIGS: Record<string, CliConfig> = {
       const args = ["--print", "-", "--output-format", "stream-json", "--verbose"];
       if (opts.sessionId) args.push("--resume", opts.sessionId);
       if (opts.model) args.push("--model", opts.model);
+      // Inject Wren IDE context so the AI uses preview instead of browser
+      const instructionsPath = getWrenInstructionsPath();
+      if (instructionsPath) args.push("--append-system-prompt-file", instructionsPath);
       return args;
     },
     parseLine: parseClaudeLine,
@@ -68,11 +85,12 @@ const CLI_CONFIGS: Record<string, CliConfig> = {
     ],
     buildArgs: (prompt, opts) => {
       const args: string[] = ["exec"];
-      // Resume previous session if available
       if (opts.sessionId) {
         args.push("resume", opts.sessionId);
       }
-      args.push(prompt, "--json", "--skip-git-repo-check");
+      // Prepend Wren context to prompt (Codex doesn't support system prompt files)
+      const wrennedPrompt = WREN_CONTEXT_PREFIX + prompt;
+      args.push(wrennedPrompt, "--json", "--skip-git-repo-check");
       if (opts.model && opts.model !== "default") args.push("--model", opts.model);
       return args;
     },

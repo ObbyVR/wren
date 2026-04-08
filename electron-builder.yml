@@ -12,6 +12,7 @@ asar: true
 files:
   - packages/main/dist/bundle.js
   - packages/main/dist/bundle.js.map
+  - packages/main/wren-ai-instructions.md
   - packages/preload/dist/**/*
   - packages/renderer/dist/**/*
   - node_modules/node-pty/**/*
