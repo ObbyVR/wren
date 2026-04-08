@@ -336,8 +336,29 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
         />
       )}
 
-      {/* Compact toolbar — model selector only */}
+      {/* Toolbar: history left | spacer | usage | model right */}
       <div className={styles.toolbar}>
+        <button
+          className={styles.historyBtn}
+          onClick={() => setShowHistory((v) => !v)}
+          title="Chat history"
+        >
+          &#x29D6;
+        </button>
+
+        {/* Agentic mode indicator */}
+        {agenticEnabled && (
+          <span className={styles.agenticBtnActive} title={`Agent ${settings.approvalMode}`}>
+            Agent
+          </span>
+        )}
+
+        <span className={styles.toolbarSpacer} />
+
+        <span className={styles.usageInline}>
+          {lastUsage ? `${lastUsage.in}in ${lastUsage.out}out` : "0in 0out"}
+        </span>
+
         {models.length > 0 && (
           <select
             className={styles.modelSelect}
@@ -351,29 +372,6 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
             ))}
           </select>
         )}
-
-        {/* Agentic mode indicator */}
-        {agenticEnabled && (
-          <span className={styles.agenticBtnActive} title={`Agent ${settings.approvalMode}`}>
-            Agent
-          </span>
-        )}
-
-        <span className={styles.toolbarSpacer} />
-
-        {lastUsage && (
-          <span className={styles.usageInline}>
-            {lastUsage.in}in {lastUsage.out}out
-          </span>
-        )}
-
-        <button
-          className={styles.historyBtn}
-          onClick={() => setShowHistory((v) => !v)}
-          title="Chat history"
-        >
-          &#x29D6;
-        </button>
       </div>
 
       {/* Agentic pending indicator */}
@@ -398,7 +396,7 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
           </div>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className={`${styles.message} ${msg.role === "user" ? styles.userMessage : ""}`}>
+            <div key={msg.id} className={`${styles.message} ${msg.role === "user" ? styles.userBubble : styles.aiBubble}`}>
               <span
                 className={`${styles.messageRole} ${msg.role === "assistant" ? styles.assistant : ""}`}
               >
@@ -407,14 +405,13 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
               <div className={styles.messageBody}>
                 {msg.role === "assistant" ? (
                   <>
-                    {/* Tool call/result events */}
                     {msg.toolEvents && msg.toolEvents.length > 0 && (
                       <div style={{ marginBottom: "0.4rem", display: "flex", flexDirection: "column", gap: "3px" }}>
                         {msg.toolEvents.map((ev, i) => {
                           if (ev.kind === "tool_call" && ev.toolCall) {
                             return (
                               <div key={i} className={styles.toolCallRow}>
-                                <span className={styles.toolCallIcon}>\u2699\uFE0F</span>
+                                <span className={styles.toolCallIcon}>&#x2699;&#xFE0F;</span>
                                 <div>
                                   <span className={styles.toolCallName}>{ev.toolCall.name}</span>
                                   {" "}
@@ -427,10 +424,10 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
                             const preview = ev.toolResult.output.slice(0, 100);
                             return (
                               <div key={i} className={`${styles.toolCallRow} ${ev.toolResult.isError ? styles.toolCallError : ""}`}>
-                                <span className={styles.toolCallIcon}>{ev.toolResult.isError ? "\u274C" : "\u2713"}</span>
+                                <span className={styles.toolCallIcon}>{ev.toolResult.isError ? "&#x274C;" : "&#x2713;"}</span>
                                 <div>
                                   <span className={styles.toolCallName}>{ev.toolResult.name}</span>
-                                  <div className={styles.toolCallResult}>{preview}{ev.toolResult.output.length > 100 ? "\u2026" : ""}</div>
+                                  <div className={styles.toolCallResult}>{preview}{ev.toolResult.output.length > 100 ? "..." : ""}</div>
                                 </div>
                               </div>
                             );
@@ -443,14 +440,11 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
                     {msg.streaming && msg.content === "" && (msg.toolEvents?.length ?? 0) === 0 && (
                       <div className={styles.thinkingRow}>
                         <span className={styles.dots}>
-                          <span>\u2022</span>
-                          <span>\u2022</span>
-                          <span>\u2022</span>
+                          <span>&#x2022;</span>
+                          <span>&#x2022;</span>
+                          <span>&#x2022;</span>
                         </span>
                       </div>
-                    )}
-                    {msg.streaming && msg.content === "" && (msg.toolEvents?.length ?? 0) > 0 && (
-                      <span className={styles.cursor} />
                     )}
                     {msg.streaming && msg.content !== "" && (
                       <span className={styles.cursor} />
@@ -489,7 +483,20 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
             \u2191
           </button>
         </div>
-        <p className={styles.hint}>Shift+Enter for new line</p>
+        <div className={styles.inputFooter}>
+          <span className={styles.hint}>Shift+Enter for new line</span>
+          <button
+            className={styles.newSessionBtn}
+            onClick={() => {
+              // Clear messages for a fresh chat (new CLI session)
+              setMessages([]);
+              localStorage.removeItem(`wren:chatMessages:${sessionId}`);
+            }}
+            title="New conversation"
+          >
+            + New
+          </button>
+        </div>
       </div>
     </div>
   );

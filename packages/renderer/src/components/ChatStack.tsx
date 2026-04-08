@@ -90,6 +90,8 @@ export function ChatStack() {
                     className={styles.closeBtn}
                     onClick={(e) => {
                       e.stopPropagation();
+                      // Clean up persisted messages
+                      try { localStorage.removeItem(`wren:chatMessages:${session.id}`); } catch { /* ignore */ }
                       removeSession(session.id);
                     }}
                     title="Close chat"

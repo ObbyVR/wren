@@ -4,8 +4,8 @@ import { PROVIDER_META, useProviders } from "../store/providerStore";
 import { useChatSessions } from "../store/chatSessionStore";
 import styles from "./NewChatPicker.module.css";
 
-/** Browser-mode providers (subscription-based, embedded webview) */
-const BROWSER_PROVIDERS: { id: ProviderId; label: string }[] = [
+/** Subscription-mode providers (CLI-based, uses local login) */
+const SUBSCRIPTION_PROVIDERS: { id: ProviderId; label: string }[] = [
   { id: "anthropic", label: "Claude" },
   { id: "openai", label: "ChatGPT" },
   { id: "gemini", label: "Gemini" },
@@ -61,7 +61,7 @@ export function NewChatPicker({ onClose }: NewChatPickerProps) {
     <div ref={ref} className={styles.picker}>
       {/* Primary: subscription-based (CLI) */}
       <div className={styles.pickerTitle}>Abbonamento</div>
-      {BROWSER_PROVIDERS.map(({ id, label }) => {
+      {SUBSCRIPTION_PROVIDERS.map(({ id, label }) => {
         const meta = PROVIDER_META[id];
         return (
           <button
