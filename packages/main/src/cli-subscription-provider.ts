@@ -233,24 +233,33 @@ function getSessionStorePath(): string {
   return path.join(app.getPath("userData"), "wren-cli-sessions.json");
 }
 
-function loadSessionStore(): Record<string, string> {
+interface SessionEntry {
+  sessionId: string;
+  contextSent: boolean;
+}
+
+function loadSessionStore(): Record<string, SessionEntry | string> {
   try {
-    return JSON.parse(readFileSync(getSessionStorePath(), "utf-8")) as Record<string, string>;
+    return JSON.parse(readFileSync(getSessionStorePath(), "utf-8")) as Record<string, SessionEntry | string>;
   } catch {
     return {};
   }
 }
 
-function saveCliSession(chatSessionId: string, cliSessionId: string): void {
+function getSessionEntry(chatSessionId: string): SessionEntry | null {
+  const raw = loadSessionStore()[chatSessionId];
+  if (!raw) return null;
+  // Migrate old string format → new object format
+  if (typeof raw === "string") return { sessionId: raw, contextSent: false };
+  return raw;
+}
+
+function saveCliSession(chatSessionId: string, sessionId: string, contextSent: boolean): void {
   const store = loadSessionStore();
-  store[chatSessionId] = cliSessionId;
+  store[chatSessionId] = { sessionId, contextSent };
   try {
     writeFileSync(getSessionStorePath(), JSON.stringify(store));
   } catch { /* ignore */ }
-}
-
-function getCliSession(chatSessionId: string): string | undefined {
-  return loadSessionStore()[chatSessionId];
 }
 
 // ── Main entry point ─────────────────────────────────────────────────────────
@@ -301,15 +310,16 @@ export function sendViaCli(
     return;
   }
 
-  // Build session context
+  // Build session context — only send Wren prefix on first message
+  const savedEntry = getSessionEntry(opts.chatSessionId);
   const cliOpts: CliOpts = {
-    sessionId: opts.sessionId ?? getCliSession(opts.chatSessionId),
+    sessionId: opts.sessionId ?? savedEntry?.sessionId,
     model: opts.model,
   };
 
-  // Prepend Wren context to prompt for all CLI providers
-  const wrennedPrompt = WREN_CONTEXT_PREFIX + prompt;
-  const args = config.buildArgs(wrennedPrompt, cliOpts);
+  const needsContext = !savedEntry?.contextSent;
+  const finalPrompt = needsContext ? (WREN_CONTEXT_PREFIX + prompt) : prompt;
+  const args = config.buildArgs(finalPrompt, cliOpts);
 
   // Build environment — strip API keys to force subscription billing
   const env: Record<string, string> = { ...(process.env as Record<string, string>) };
@@ -343,7 +353,7 @@ export function sendViaCli(
 
   // Send prompt via stdin (Claude) or as arg (Codex — already in args)
   if (config.promptViaStdin && proc.stdin) {
-    proc.stdin.write(wrennedPrompt);
+    proc.stdin.write(finalPrompt);
     proc.stdin.end();
   }
 
@@ -405,7 +415,7 @@ export function sendViaCli(
     }
 
     if (lastSessionId) {
-      saveCliSession(opts.chatSessionId, lastSessionId);
+      saveCliSession(opts.chatSessionId, lastSessionId, true);
     }
 
     if (code !== 0 && !sentText) {

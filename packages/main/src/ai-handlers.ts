@@ -9,6 +9,39 @@ import {
 } from "./key-store";
 import { buildAgenticSystemPrompt, executeAgenticLoop } from "./agentic-engine";
 import { sendViaCli } from "./cli-subscription-provider";
+import type { AiMessage } from "@wren/shared";
+
+// ── Wren system prompt (injected for ALL providers) ──────────────────────────
+const WREN_SYSTEM_PROMPT = "You are inside Wren IDE. Use the built-in Preview panel for visual output. Never open a browser. Keep responses concise.";
+
+/**
+ * Window conversation history to limit token usage.
+ * Keeps last MAX_PAIRS user-assistant pairs. Older messages are
+ * compressed into a single summary. Works for all providers.
+ */
+const MAX_PAIRS = 6; // 12 messages max
+
+function windowHistory(messages: AiMessage[]): AiMessage[] {
+  if (messages.length <= MAX_PAIRS * 2) return messages;
+
+  // Split into old and recent
+  const cutoff = messages.length - MAX_PAIRS * 2;
+  const old = messages.slice(0, cutoff);
+  const recent = messages.slice(cutoff);
+
+  // Build a brief summary of old messages (no LLM call — just concatenation)
+  const summaryParts: string[] = [];
+  for (const m of old) {
+    const snippet = m.content.slice(0, 80).replace(/\n/g, " ");
+    summaryParts.push(`${m.role === "user" ? "User" : "AI"}: ${snippet}`);
+  }
+  const summary: AiMessage = {
+    role: "user",
+    content: `[Prior conversation summary (${old.length} messages):\n${summaryParts.join("\n")}\n]`,
+  };
+
+  return [summary, ...recent];
+}
 
 // Typed handle helper (mirrors pattern in index.ts)
 type TypedHandle = <C extends keyof IpcChannelMap>(
@@ -226,7 +259,9 @@ export function registerAiHandlers(
     // immediately and can start listening for chunks.
     void (async () => {
       try {
-        let resolvedSystemPrompt = systemPrompt;
+        // Apply Wren system prompt (all providers) + history windowing
+        let resolvedSystemPrompt = systemPrompt ?? WREN_SYSTEM_PROMPT;
+        const windowedMessages = windowHistory(messages);
 
         if (agenticMode && projectRoot) {
           resolvedSystemPrompt = await buildAgenticSystemPrompt(
@@ -235,7 +270,7 @@ export function registerAiHandlers(
           );
           const usage = await executeAgenticLoop(
             requestId,
-            messages,
+            windowedMessages,
             provider,
             { model, systemPrompt: resolvedSystemPrompt, maxTokens: 4096 },
             projectRoot,
@@ -248,8 +283,8 @@ export function registerAiHandlers(
           });
         } else {
           const usage = await provider.sendMessage(
-            messages,
-            { model, ...(resolvedSystemPrompt !== undefined ? { systemPrompt: resolvedSystemPrompt } : {}), maxTokens: 4096 },
+            windowedMessages,
+            { model, systemPrompt: resolvedSystemPrompt, maxTokens: 4096 },
             (chunk) => {
               if (chunk.type === "text") {
                 win?.webContents.send("ai:stream-chunk", { requestId, text: chunk.text });
