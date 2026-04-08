@@ -21,10 +21,8 @@ import type { ProjectTab } from "@wren/shared";
 
 const STORAGE_KEY_LAYOUT_H = "wren:layout:horizontal";
 const STORAGE_KEY_LAYOUT_V = "wren:layout:vertical";
-const STORAGE_KEY_LAYOUT_MODE = "wren:layout:mode";
 
-type LayoutMode = "classic" | "hub";
-type SidebarPanel = "git" | null;
+type SidebarPanel = "git" | "files" | "preview" | null;
 
 function loadLayout(key: string): Layout | undefined {
   try {
@@ -34,22 +32,15 @@ function loadLayout(key: string): Layout | undefined {
   return undefined;
 }
 
-function loadLayoutMode(): LayoutMode {
-  const raw = localStorage.getItem(STORAGE_KEY_LAYOUT_MODE);
-  return raw === "hub" ? "hub" : "classic";
-}
-
-// ── Per-project workspace — Classic Layout ────────────────────────────────────
+// ── Per-project workspace ────────────────────────────────────────────────────
 
 interface WorkspaceProps {
   project: ProjectTab;
   visible: boolean;
-  chatOpen: boolean;
-  previewOpen: boolean;
   sidebarPanel: SidebarPanel;
 }
 
-function ProjectWorkspace({ project, visible, chatOpen, previewOpen, sidebarPanel }: WorkspaceProps) {
+function ProjectWorkspace({ project, visible, sidebarPanel }: WorkspaceProps) {
   const [openFilePath, setOpenFilePath] = useState<string | null>(null);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
 
@@ -79,11 +70,27 @@ function ProjectWorkspace({ project, visible, chatOpen, previewOpen, sidebarPane
     }
   }, [project.id]);
 
+  // Determine what the right panel shows based on sidebarPanel
+  const showPreview = sidebarPanel === "preview";
+  const showGit = sidebarPanel === "git";
+
   return (
     <div
       className={styles.workspace}
       style={{ display: visible ? "flex" : "none" }}
     >
+      {/* File tree overlay — toggled from status bar */}
+      {sidebarPanel === "files" && (
+        <div className={styles.fileTreeOverlay}>
+          <FileTree
+            rootPath={rootPath}
+            activePath={activeFilePath}
+            onFileOpen={handleFileOpen}
+            onOpenFolder={handleOpenFolder}
+          />
+        </div>
+      )}
+
       <Group
         orientation="horizontal"
         defaultLayout={loadLayout(`${STORAGE_KEY_LAYOUT_H}:${project.id}`)}
@@ -91,20 +98,15 @@ function ProjectWorkspace({ project, visible, chatOpen, previewOpen, sidebarPane
           localStorage.setItem(`${STORAGE_KEY_LAYOUT_H}:${project.id}`, JSON.stringify(layout))
         }
       >
-        {/* Left: File Tree */}
-        <Panel defaultSize={18} minSize={10} maxSize={35}>
-          <FileTree
-            rootPath={rootPath}
-            activePath={activeFilePath}
-            onFileOpen={handleFileOpen}
-            onOpenFolder={handleOpenFolder}
-          />
+        {/* LEFT: AI Chat */}
+        <Panel defaultSize={30} minSize={1} collapsible>
+          <ChatPanel />
         </Panel>
 
         <Separator className={styles.hHandle} />
 
-        {/* Center: Editor + Terminal stacked vertically */}
-        <Panel defaultSize={chatOpen || previewOpen || sidebarPanel ? 54 : 82} minSize={30}>
+        {/* RIGHT: Editor/Preview + Terminal stacked */}
+        <Panel defaultSize={showGit ? 48 : 70} minSize={1}>
           <Group
             orientation="vertical"
             defaultLayout={loadLayout(`${STORAGE_KEY_LAYOUT_V}:${project.id}`)}
@@ -112,102 +114,34 @@ function ProjectWorkspace({ project, visible, chatOpen, previewOpen, sidebarPane
               localStorage.setItem(`${STORAGE_KEY_LAYOUT_V}:${project.id}`, JSON.stringify(layout))
             }
           >
-            <Panel defaultSize={70} minSize={20}>
-              <Editor
-                openPath={openFilePath}
-                onPathHandled={handlePathHandled}
-              />
+            <Panel defaultSize={75} minSize={1} collapsible>
+              {showPreview ? (
+                <PreviewPanel />
+              ) : (
+                <Editor
+                  openPath={openFilePath}
+                  onPathHandled={handlePathHandled}
+                />
+              )}
             </Panel>
 
             <Separator className={styles.vHandle} />
 
-            <Panel defaultSize={30} minSize={15} maxSize={60}>
+            <Panel defaultSize={25} minSize={1} collapsible>
               <Terminal cwd={termCwd} />
             </Panel>
           </Group>
         </Panel>
 
-        {chatOpen && (
+        {/* FAR RIGHT: Git panel (optional) */}
+        {showGit && (
           <>
             <Separator className={styles.hHandle} />
-            <Panel defaultSize={previewOpen ? 14 : 28} minSize={14} maxSize={50}>
-              <ChatPanel />
-            </Panel>
-          </>
-        )}
-
-        {previewOpen && (
-          <>
-            <Separator className={styles.hHandle} />
-            <Panel defaultSize={chatOpen ? 14 : 28} minSize={14} maxSize={50}>
-              <PreviewPanel />
-            </Panel>
-          </>
-        )}
-
-        {sidebarPanel === "git" && (
-          <>
-            <Separator className={styles.hHandle} />
-            <Panel defaultSize={22} minSize={16} maxSize={45}>
+            <Panel defaultSize={22} minSize={1} collapsible>
               <GitPanel />
             </Panel>
           </>
         )}
-      </Group>
-    </div>
-  );
-}
-
-// ── Hub Layout ────────────────────────────────────────────────────────────────
-// Large central preview, with chats for active project arranged in side panels.
-
-function HubLayout({ chatOpen }: { chatOpen: boolean }) {
-  const { projects, activeProjectId } = useProjects();
-
-  // In Hub mode: PreviewPanel is center + large; chats surround it.
-  // Left panel: file tree of active project; right panels: preview + optional chat.
-  const activeProject = projects.find((p) => p.id === activeProjectId);
-
-  return (
-    <div className={styles.workspace} style={{ display: "flex" }}>
-      <Group orientation="horizontal">
-        {/* Left: active project chat */}
-        {chatOpen && (
-          <>
-            <Panel defaultSize={22} minSize={14} maxSize={35}>
-              <div className={styles.hubChatColumn}>
-                <div className={styles.hubProjectLabel}>
-                  {activeProject?.name ?? "Project"}
-                </div>
-                <ChatPanel />
-              </div>
-            </Panel>
-            <Separator className={styles.hHandle} />
-          </>
-        )}
-
-        {/* Center: large preview */}
-        <Panel defaultSize={chatOpen ? 56 : 78} minSize={40}>
-          <div className={styles.hubCenterColumn}>
-            <PreviewPanel />
-          </div>
-        </Panel>
-
-        {/* Right: other projects chats (up to 2 more) */}
-        {projects
-          .filter((p) => p.id !== activeProjectId)
-          .slice(0, 2)
-          .map((project) => (
-            <div key={project.id} style={{ display: "contents" }}>
-              <Separator className={styles.hHandle} />
-              <Panel defaultSize={11} minSize={10} maxSize={20}>
-                <div className={styles.hubChatColumn}>
-                  <div className={styles.hubProjectLabel}>{project.name}</div>
-                  <ChatPanel />
-                </div>
-              </Panel>
-            </div>
-          ))}
       </Group>
     </div>
   );
@@ -218,22 +152,11 @@ function HubLayout({ chatOpen }: { chatOpen: boolean }) {
 function AppInner() {
   const { projects, activeProjectId } = useProjects();
   const { agenticEnabled, actionLog } = useAgentic();
-  const [chatOpen, setChatOpen] = useState(true);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showCostDashboard, setShowCostDashboard] = useState(false);
   const [actionLogOpen, setActionLogOpen] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>(loadLayoutMode);
   const [sidebarPanel, setSidebarPanel] = useState<SidebarPanel>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone());
-
-  const toggleLayoutMode = useCallback(() => {
-    setLayoutMode((m) => {
-      const next: LayoutMode = m === "classic" ? "hub" : "classic";
-      localStorage.setItem(STORAGE_KEY_LAYOUT_MODE, next);
-      return next;
-    });
-  }, []);
 
   const toggleSidebarPanel = useCallback((panel: SidebarPanel) => {
     setSidebarPanel((prev) => (prev === panel ? null : panel));
@@ -254,109 +177,81 @@ function AppInner() {
 
   return (
     <div className={styles.shell}>
-      {/* Tab bar at the top */}
+      {/* ── Top: browser-style project tabs (full width) ── */}
       <TabBar />
 
-      {/* Workspaces */}
-      {layoutMode === "classic" ? (
-        projects.map((project) => (
-          <ProjectWorkspace
-            key={project.id}
-            project={project}
-            visible={project.id === activeProjectId}
-            chatOpen={chatOpen}
-            previewOpen={previewOpen}
-            sidebarPanel={sidebarPanel}
-          />
-        ))
-      ) : (
-        <HubLayout chatOpen={chatOpen} />
-      )}
+      {/* ── Middle: toolbar + workspace ── */}
+      <div className={styles.mainArea}>
+        {/* Left toolbar column */}
+        <div className={styles.toolbar}>
+          <button
+            className={styles.toolBtn}
+            onClick={() => setShowSettings(true)}
+            title="Settings (Cmd+,)"
+          >
+            ⚙
+          </button>
+          <button
+            className={styles.toolBtn}
+            onClick={() => setShowCostDashboard(true)}
+            title="Billing & costs"
+          >
+            $
+          </button>
+
+          {agenticEnabled && (
+            <button
+              className={`${styles.toolBtn} ${styles.toolBtnAgent}`}
+              onClick={() => setActionLogOpen((v) => !v)}
+              title={`Agent · ${actionLog.length} actions`}
+            >
+              <span className={styles.agenticDot} />
+            </button>
+          )}
+
+          <span className={styles.toolSpacer} />
+
+          <button
+            className={`${styles.toolBtn} ${sidebarPanel === "files" ? styles.toolBtnActive : ""}`}
+            onClick={() => toggleSidebarPanel("files")}
+            title="File explorer"
+          >
+            📁
+          </button>
+          <button
+            className={`${styles.toolBtn} ${sidebarPanel === "preview" ? styles.toolBtnActive : ""}`}
+            onClick={() => toggleSidebarPanel("preview")}
+            title="Browser preview"
+          >
+            ◉
+          </button>
+          <button
+            className={`${styles.toolBtn} ${sidebarPanel === "git" ? styles.toolBtnActive : ""}`}
+            onClick={() => toggleSidebarPanel("git")}
+            title="Git panel"
+          >
+            ⎇
+          </button>
+        </div>
+
+        {/* Workspace */}
+        <div className={styles.workspaceContainer}>
+          {projects.map((project) => (
+            <ProjectWorkspace
+              key={project.id}
+              project={project}
+              visible={project.id === activeProjectId}
+              sidebarPanel={sidebarPanel}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* Action log panel */}
       <ActionLogPanel isOpen={actionLogOpen} onToggle={() => setActionLogOpen((v) => !v)} />
 
-      {/* Bottom action bar */}
-      <div className={styles.statusBar}>
-        <button
-          className={styles.statusBtn}
-          onClick={() => setShowSettings(true)}
-          title="Settings (Cmd+,)"
-        >
-          ⚙ Settings
-        </button>
-        <button
-          className={styles.statusBtn}
-          onClick={() => setShowCostDashboard(true)}
-          title="Cost dashboard"
-        >
-          $ Cost
-        </button>
-
-        {/* Git panel toggle */}
-        <button
-          className={`${styles.statusBtn} ${sidebarPanel === "git" ? styles.statusBtnActive : ""}`}
-          onClick={() => toggleSidebarPanel("git")}
-          title="Git panel"
-        >
-          ⎇ Git
-        </button>
-
-        {/* Layout mode toggle (only in classic mode) */}
-        {layoutMode === "classic" && (
-          <button
-            className={styles.statusBtn}
-            onClick={toggleLayoutMode}
-            title="Switch to Hub layout — large preview with project chats around it"
-          >
-            ⊞ Hub
-          </button>
-        )}
-        {layoutMode === "hub" && (
-          <button
-            className={`${styles.statusBtn} ${styles.statusBtnActive}`}
-            onClick={toggleLayoutMode}
-            title="Switch to Classic layout"
-          >
-            ⊟ Classic
-          </button>
-        )}
-
-        <span className={styles.statusSpacer} />
-
-        {/* Agentic mode indicator */}
-        {agenticEnabled && (
-          <span
-            className={styles.agenticIndicator}
-            title={`Agentic mode active · ${actionLog.length} actions`}
-            onClick={() => setActionLogOpen((v) => !v)}
-          >
-            <span className={styles.agenticIndicatorDot} />
-            Agent{actionLog.length > 0 ? ` · ${actionLog.length}` : ""}
-          </span>
-        )}
-
-        {layoutMode === "classic" && (
-          <button
-            className={styles.statusBtn}
-            onClick={() => setPreviewOpen((v) => !v)}
-            title={previewOpen ? "Hide browser preview" : "Show browser preview (Nexus Bridge)"}
-          >
-            {previewOpen ? "✕ Preview" : "◉ Preview"}
-          </button>
-        )}
-        <button
-          className={styles.chatToggleBtn}
-          onClick={() => setChatOpen((v) => !v)}
-          title={chatOpen ? "Hide AI chat" : "Show AI chat"}
-        >
-          {chatOpen ? "✕ Chat" : "✦ Chat"}
-        </button>
-      </div>
-
-      {/* Approval dialog */}
+      {/* ── Modals ── */}
       <ApprovalDialog />
-
       {showSettings && (
         <SettingsPanel
           onClose={() => setShowSettings(false)}
@@ -364,8 +259,6 @@ function AppInner() {
         />
       )}
       {showCostDashboard && <CostDashboard onClose={() => setShowCostDashboard(false)} />}
-
-      {/* Onboarding wizard */}
       {showOnboarding && (
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
       )}

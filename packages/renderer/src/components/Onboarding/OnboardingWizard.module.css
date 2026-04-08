@@ -234,6 +234,51 @@
   color: #e05c5c;
 }
 
+/* ── Existing keys chooser ────────────────────────────────────────────────── */
+
+.existingKeys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.existingKeyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-tab);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.existingKeyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.existingKeyLabel {
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.existingKeyMask {
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.choiceButtons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 /* ── Step 3 ────────────────────────────────────────────────────────────────── */
 
 .openFolderBtn {

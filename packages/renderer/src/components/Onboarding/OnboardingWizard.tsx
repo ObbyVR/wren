@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useProviders } from "../../store/providerStore";
+import { useProviders, PROVIDER_META } from "../../store/providerStore";
 import { useProjects } from "../../store/projectStore";
 import styles from "./OnboardingWizard.module.css";
 
@@ -53,7 +53,7 @@ function Step1({ theme, onTheme }: Step1Props) {
   );
 }
 
-// ── Step 2: API Key ───────────────────────────────────────────────────────────
+// ── Step 2: Subscriptions & API Keys ─────────────────────────────────────────
 
 type ProviderChoice = "anthropic" | "openai" | "gemini";
 
@@ -62,12 +62,17 @@ interface Step2Props {
 }
 
 function Step2({ onKeySaved }: Step2Props) {
-  const { setProviderKey, setProviderStatus, getProvider } = useProviders();
+  const { setProviderKey, setProviderStatus, getProvider, providers } = useProviders();
+  const [mode, setMode] = useState<"choose" | "existing" | "new">("choose");
   const [provider, setProvider] = useState<ProviderChoice>("anthropic");
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Check if any keys already exist
+  const existingKeys = providers.filter((p) => p.keyMasked);
+  const hasExisting = existingKeys.length > 0;
 
   const handleSave = useCallback(async () => {
     const key = apiKey.trim();
@@ -97,6 +102,12 @@ function Step2({ onKeySaved }: Step2Props) {
     }
   }, [provider, apiKey, setProviderKey, setProviderStatus, onKeySaved]);
 
+  const handleUseExisting = useCallback(() => {
+    setMode("existing");
+    setSaved(true);
+    onKeySaved();
+  }, [onKeySaved]);
+
   const hasKey = !!getProvider(provider)?.keyMasked;
 
   const placeholder =
@@ -104,6 +115,58 @@ function Step2({ onKeySaved }: Step2Props) {
     provider === "openai" ? "sk-…" :
     "AIza…";
 
+  const providerLabel = (p: string) =>
+    p === "anthropic" ? "Claude" : p === "openai" ? "OpenAI" : p === "gemini" ? "Gemini" : p;
+
+  // ── Choose mode: reuse existing or add new ──
+  if (mode === "choose" && hasExisting) {
+    return (
+      <div className={styles.stepContent}>
+        <div className={styles.stepIcon}>🔑</div>
+        <h2 className={styles.stepTitle}>Your subscriptions</h2>
+        <p className={styles.stepDesc}>
+          You have existing API keys configured. Use them for this project or add new ones.
+        </p>
+
+        <div className={styles.existingKeys}>
+          {existingKeys.map((p) => (
+            <div key={p.id} className={styles.existingKeyRow}>
+              <span className={styles.existingKeyDot} style={{ background: PROVIDER_META[p.id as keyof typeof PROVIDER_META]?.color ?? "#888" }} />
+              <span className={styles.existingKeyLabel}>{providerLabel(p.id)}</span>
+              <span className={styles.existingKeyMask}>{p.keyMasked}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.choiceButtons}>
+          <button className={styles.nextBtn} onClick={handleUseExisting}>
+            Use these keys
+          </button>
+          <button className={styles.backBtn} onClick={() => setMode("new")}>
+            Add new key
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Existing keys confirmed ──
+  if (mode === "existing" && saved) {
+    return (
+      <div className={styles.stepContent}>
+        <div className={styles.stepIcon}>✓</div>
+        <h2 className={styles.stepTitle}>Keys ready</h2>
+        <p className={styles.stepDesc}>
+          Your existing subscriptions will be used for this project.
+        </p>
+        <div className={styles.savedMsg}>
+          {existingKeys.map((p) => providerLabel(p.id)).join(", ")} configured
+        </div>
+      </div>
+    );
+  }
+
+  // ── New key form ──
   return (
     <div className={styles.stepContent}>
       <div className={styles.stepIcon}>🔑</div>
@@ -119,14 +182,14 @@ function Step2({ onKeySaved }: Step2Props) {
             className={`${styles.providerTab} ${provider === p ? styles.providerTabActive : ""}`}
             onClick={() => { setProvider(p); setApiKey(""); setError(null); setSaved(false); }}
           >
-            {p === "anthropic" ? "Claude" : p === "openai" ? "OpenAI" : "Gemini"}
+            {providerLabel(p)}
           </button>
         ))}
       </div>
 
       {hasKey && !saved && (
         <div className={styles.alreadyConfigured}>
-          ✓ {provider === "anthropic" ? "Claude" : provider === "openai" ? "OpenAI" : "Gemini"} key already configured
+          ✓ {providerLabel(provider)} key already configured
         </div>
       )}
 
@@ -152,6 +215,12 @@ function Step2({ onKeySaved }: Step2Props) {
             {saving ? "Validating…" : "Save key"}
           </button>
         </>
+      )}
+
+      {hasExisting && (
+        <button className={styles.skipBtn} onClick={() => setMode("choose")} style={{ marginTop: 8 }}>
+          ← Back to existing keys
+        </button>
       )}
     </div>
   );
@@ -247,7 +316,7 @@ interface OnboardingWizardProps {
   onComplete: () => void;
 }
 
-const STEPS = ["Welcome", "API Key", "Project", "Done"];
+const STEPS = ["Welcome", "Subscriptions", "Project", "Done"];
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [step, setStep] = useState(0);

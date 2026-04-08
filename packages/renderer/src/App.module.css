@@ -1,3 +1,5 @@
+/* ── Shell: full viewport, column layout ─────────────────────────────────── */
+
 .shell {
   width: 100%;
   height: 100vh;
@@ -6,7 +8,8 @@
   overflow: hidden;
 }
 
-/* Horizontal resize handle between sidebar and main area */
+/* ── Resize handles ──────────────────────────────────────────────────────── */
+
 .hHandle {
   width: 4px;
   cursor: col-resize;
@@ -14,13 +17,11 @@
   flex-shrink: 0;
   transition: background 0.15s;
 }
-
 .hHandle:hover,
 .hHandle[data-resize-handle-active] {
   background: var(--accent);
 }
 
-/* Vertical resize handle between editor and terminal */
 .vHandle {
   height: 4px;
   cursor: row-resize;
@@ -28,83 +29,123 @@
   flex-shrink: 0;
   transition: background 0.15s;
 }
-
 .vHandle:hover,
 .vHandle[data-resize-handle-active] {
   background: var(--accent);
 }
 
-/* ── Per-project workspace container ─────────────────────────────────────── */
+/* ── Main area: toolbar + workspace ──────────────────────────────────────── */
+
+.mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Vertical toolbar ────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar, var(--bg-base));
+  border-right: 1px solid var(--border);
+  padding: 8px 0;
+  gap: 2px;
+  align-items: center;
+}
+
+.toolBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  border-radius: var(--radius, 4px);
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.12s, background 0.12s;
+}
+.toolBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tab);
+}
+
+.toolBtnActive {
+  color: var(--accent, #7c6fff) !important;
+  background: rgba(124, 111, 255, 0.1);
+}
+
+.toolBtnAgent {
+  color: #34d07b;
+}
+
+.agenticDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d07b;
+  box-shadow: 0 0 6px #34d07b88;
+  animation: agenticStatusPulse 2s ease-in-out infinite;
+}
+
+.toolSpacer { flex: 1; }
+
+/* ── Workspace container ─────────────────────────────────────────────────── */
+
+.workspaceContainer {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Per-project workspace ───────────────────────────────────────────────── */
 
 .workspace {
   flex: 1;
   overflow: hidden;
   flex-direction: row;
   min-height: 0;
+  position: relative;
 }
 
-/* ── Status bar at the bottom ─────────────────────────────────────────────── */
+/* ── File tree overlay sidebar ───────────────────────────────────────────── */
 
-.statusBar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 8px;
-  background: var(--bg-base);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+.fileTreeOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 260px;
+  z-index: 50;
+  background: var(--bg-sidebar, var(--bg-base));
+  border-right: 1px solid var(--border);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideInFileTree 0.15s ease-out;
 }
 
-.statusBtn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  padding: 0 6px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 3px;
-  transition: color 0.12s, background 0.12s;
+@keyframes slideInFileTree {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
 
-.statusBtn:hover {
-  color: var(--text-secondary);
-  background: var(--bg-tab);
-}
+/* status bar removed — all controls in toolbar */
+.statusBar { display: none; }
+.statusBtn { display: none; }
+.statusBtnActive { display: none; }
+.statusSpacer { display: none; }
 
-.statusBtnActive {
-  color: var(--accent, #7c6fff) !important;
-}
-
-.statusSpacer { flex: 1; }
-
-.chatToggleBtn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  padding: 0 8px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 3px;
-  transition: color 0.12s, background 0.12s;
-}
-
-.chatToggleBtn:hover {
-  color: var(--accent);
-  background: var(--bg-tab);
-}
-
-/* ── Agentic indicator in status bar ────────────────────────────────────────── */
+/* ── Agentic indicator ───────────────────────────────────────────────────── */
 
 .agenticIndicator {
   display: flex;
@@ -118,7 +159,6 @@
   border-radius: 3px;
   transition: background 0.12s;
 }
-
 .agenticIndicator:hover {
   background: var(--bg-tab);
 }
@@ -135,36 +175,4 @@
 @keyframes agenticStatusPulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
-}
-
-/* ── Hub layout ──────────────────────────────────────────────────────────────── */
-
-.hubChatColumn {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg-base);
-}
-
-.hubProjectLabel {
-  padding: 4px 8px;
-  font-size: 10px;
-  font-family: var(--font-ui);
-  color: var(--text-muted);
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hubCenterColumn {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
 }
