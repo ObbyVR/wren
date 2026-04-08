@@ -65,10 +65,13 @@ export function ChatSessionProvider({
   const [sessions, setSessions] = useState<ChatSessionState[]>(() => {
     const saved = loadSessions(projectId);
     if (saved.length > 0) {
-      // Migrate: "browser" mode replaced by "subscription" (CLI-based), keep "api" as-is
+      // Migrate saved sessions:
+      // - "browser" mode → "subscription" (CLI-based)
+      // - OpenAI "gpt-4o" model → "default" (Codex subscription doesn't support gpt-4o)
       return saved.map((s) => ({
         ...s,
         mode: (s.mode === "browser" || !s.mode) ? "subscription" as ChatSessionMode : s.mode,
+        modelId: (s.providerId === "openai" && s.modelId === "gpt-4o") ? "default" : s.modelId,
       }));
     }
     const defaultModel = PROVIDER_META[defaultProviderId]?.defaultModel ?? "";
