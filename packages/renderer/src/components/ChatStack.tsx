@@ -68,12 +68,12 @@ export function ChatStack() {
             <div
               key={session.id}
               className={`${styles.sessionItem} ${session.collapsed ? styles.sessionCollapsed : ""}`}
+              style={{ "--session-color": color } as React.CSSProperties}
             >
               {/* Accordion header */}
               <button
                 className={styles.sessionHeader}
                 onClick={() => toggleCollapse(session.id)}
-                style={{ borderLeftColor: color }}
               >
                 <span className={styles.providerDot} style={{ background: color }} />
                 <span className={styles.sessionLabel}>{session.label}</span>
