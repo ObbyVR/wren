@@ -333,6 +333,10 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
           onLoadSession={(_sid, msgs) => {
             setMessages(msgs.map((m) => ({ ...m, streaming: false, toolEvents: [] })));
           }}
+          onNewSession={() => {
+            setMessages([]);
+            localStorage.removeItem(`wren:chatMessages:${sessionId}`);
+          }}
         />
       )}
 

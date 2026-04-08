@@ -17,6 +17,7 @@ interface ChatHistoryProps {
   providerId: ProviderId;
   onClose: () => void;
   onLoadSession: (sessionId: string, messages: Array<{ id: string; role: "user" | "assistant"; content: string }>) => void;
+  onNewSession: () => void;
 }
 
 /**
@@ -71,30 +72,26 @@ function buildHistoryEntries(): HistoryEntry[] {
   return entries;
 }
 
-export function ChatHistory({ currentSessionId, onClose, onLoadSession }: ChatHistoryProps) {
+export function ChatHistory({ currentSessionId, providerId, onClose, onLoadSession, onNewSession }: ChatHistoryProps) {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  const meta = PROVIDER_META[providerId];
 
   useEffect(() => {
-    setEntries(buildHistoryEntries());
-  }, []);
+    // Only show sessions for THIS provider
+    setEntries(buildHistoryEntries().filter((e) => e.providerId === providerId));
+  }, [providerId]);
 
-  // Close on click outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
 
-  // Close on Escape
   useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
+    function handleKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
@@ -102,61 +99,47 @@ export function ChatHistory({ currentSessionId, onClose, onLoadSession }: ChatHi
   const handleSelect = (entry: HistoryEntry) => {
     try {
       const raw = localStorage.getItem(`wren:chatMessages:${entry.sessionId}`);
-      if (raw) {
-        const msgs = JSON.parse(raw);
-        onLoadSession(entry.sessionId, msgs);
-      }
+      if (raw) onLoadSession(entry.sessionId, JSON.parse(raw));
     } catch { /* ignore */ }
     onClose();
   };
 
-  // Group entries by provider
-  const grouped = new Map<string, HistoryEntry[]>();
-  for (const e of entries) {
-    const pid = e.providerId;
-    if (!grouped.has(pid)) grouped.set(pid, []);
-    grouped.get(pid)!.push(e);
-  }
-
   return (
     <div ref={ref} className={styles.panel}>
       <div className={styles.header}>
-        <span className={styles.title}>History</span>
+        <div className={styles.headerTitle}>
+          <span className={styles.providerDot} style={{ background: meta?.color ?? "#888" }} />
+          <span className={styles.title}>{meta?.name ?? "Chat"}</span>
+        </div>
         <button className={styles.closeBtn} onClick={onClose}>×</button>
       </div>
+
+      {/* New session button — prominent */}
+      <button
+        className={styles.newSessionBtn}
+        onClick={() => { onNewSession(); onClose(); }}
+      >
+        + New {meta?.name ?? "Chat"} Session
+      </button>
+
       <div className={styles.list}>
         {entries.length === 0 ? (
           <div className={styles.empty}>No saved conversations</div>
         ) : (
-          [...grouped.entries()].map(([pid, group]) => {
-            const meta = PROVIDER_META[pid as ProviderId];
+          entries.map((entry) => {
+            const isCurrent = entry.sessionId === currentSessionId;
             return (
-              <div
-                key={pid}
-                className={styles.providerGroup}
-                style={{ "--provider-color": meta?.color ?? "#888" } as React.CSSProperties}
+              <button
+                key={entry.sessionId}
+                className={`${styles.item} ${isCurrent ? styles.itemActive : ""}`}
+                onClick={() => handleSelect(entry)}
               >
-                <div className={styles.providerHeader}>
-                  <span className={styles.providerDot} style={{ background: meta?.color ?? "#888" }} />
-                  {meta?.name ?? pid}
+                <div className={styles.itemHeader}>
+                  <span className={styles.itemLabel}>{entry.label}</span>
+                  <span className={styles.itemCount}>{entry.messageCount} msg</span>
                 </div>
-                {group.map((entry) => {
-                  const isCurrent = entry.sessionId === currentSessionId;
-                  return (
-                    <button
-                      key={entry.sessionId}
-                      className={`${styles.item} ${isCurrent ? styles.itemActive : ""}`}
-                      onClick={() => handleSelect(entry)}
-                    >
-                      <div className={styles.itemHeader}>
-                        <span className={styles.itemLabel}>{entry.label}</span>
-                        <span className={styles.itemCount}>{entry.messageCount} msg</span>
-                      </div>
-                      <div className={styles.itemPreview}>{entry.preview}</div>
-                    </button>
-                  );
-                })}
-              </div>
+                <div className={styles.itemPreview}>{entry.preview}</div>
+              </button>
             );
           })
         )}
