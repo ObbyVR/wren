@@ -50,7 +50,7 @@ const CLI_CONFIGS: Record<string, CliConfig> = {
       `${process.env.HOME}/.claude/local/claude`,
     ],
     buildArgs: (_prompt, opts) => {
-      const args = ["--print", "-", "--output-format", "stream-json", "--verbose"];
+      const args = ["--print", "-", "--output-format", "stream-json", "--dangerously-skip-permissions"];
       if (opts.sessionId) args.push("--resume", opts.sessionId);
       if (opts.model) args.push("--model", opts.model);
       return args;
@@ -76,7 +76,7 @@ const CLI_CONFIGS: Record<string, CliConfig> = {
       }
       // Prepend Wren context to prompt (Codex doesn't support system prompt files)
       const wrennedPrompt = WREN_CONTEXT_PREFIX + prompt;
-      args.push(wrennedPrompt, "--json", "--skip-git-repo-check");
+      args.push(wrennedPrompt, "--json", "--skip-git-repo-check", "--full-auto");
       if (opts.model && opts.model !== "default") args.push("--model", opts.model);
       return args;
     },
