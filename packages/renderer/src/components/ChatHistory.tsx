@@ -110,6 +110,14 @@ export function ChatHistory({ currentSessionId, onClose, onLoadSession }: ChatHi
     onClose();
   };
 
+  // Group entries by provider
+  const grouped = new Map<string, HistoryEntry[]>();
+  for (const e of entries) {
+    const pid = e.providerId;
+    if (!grouped.has(pid)) grouped.set(pid, []);
+    grouped.get(pid)!.push(e);
+  }
+
   return (
     <div ref={ref} className={styles.panel}>
       <div className={styles.header}>
@@ -120,22 +128,35 @@ export function ChatHistory({ currentSessionId, onClose, onLoadSession }: ChatHi
         {entries.length === 0 ? (
           <div className={styles.empty}>No saved conversations</div>
         ) : (
-          entries.map((entry) => {
-            const meta = PROVIDER_META[entry.providerId as ProviderId];
-            const isCurrent = entry.sessionId === currentSessionId;
+          [...grouped.entries()].map(([pid, group]) => {
+            const meta = PROVIDER_META[pid as ProviderId];
             return (
-              <button
-                key={entry.sessionId}
-                className={`${styles.item} ${isCurrent ? styles.itemActive : ""}`}
-                onClick={() => handleSelect(entry)}
+              <div
+                key={pid}
+                className={styles.providerGroup}
+                style={{ "--provider-color": meta?.color ?? "#888" } as React.CSSProperties}
               >
-                <div className={styles.itemHeader}>
-                  <span className={styles.itemDot} style={{ background: meta?.color ?? "#888" }} />
-                  <span className={styles.itemLabel}>{entry.label}</span>
-                  <span className={styles.itemCount}>{entry.messageCount}</span>
+                <div className={styles.providerHeader}>
+                  <span className={styles.providerDot} style={{ background: meta?.color ?? "#888" }} />
+                  {meta?.name ?? pid}
                 </div>
-                <div className={styles.itemPreview}>{entry.preview}</div>
-              </button>
+                {group.map((entry) => {
+                  const isCurrent = entry.sessionId === currentSessionId;
+                  return (
+                    <button
+                      key={entry.sessionId}
+                      className={`${styles.item} ${isCurrent ? styles.itemActive : ""}`}
+                      onClick={() => handleSelect(entry)}
+                    >
+                      <div className={styles.itemHeader}>
+                        <span className={styles.itemLabel}>{entry.label}</span>
+                        <span className={styles.itemCount}>{entry.messageCount} msg</span>
+                      </div>
+                      <div className={styles.itemPreview}>{entry.preview}</div>
+                    </button>
+                  );
+                })}
+              </div>
             );
           })
         )}

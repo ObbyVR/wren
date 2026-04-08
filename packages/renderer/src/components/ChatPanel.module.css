@@ -57,7 +57,7 @@
 }
 
 .usageInline {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-family: var(--font-code);
   white-space: nowrap;
@@ -261,16 +261,15 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text-secondary);
-  font-size: 12px;
-  width: 26px;
-  height: 26px;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
-  margin-left: 4px;
 }
 
 .historyBtn:hover {
@@ -294,19 +293,19 @@
 
 .newSessionBtn {
   background: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
-  color: var(--text-secondary);
-  font-size: 10px;
-  padding: 2px 8px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
 
 .newSessionBtn:hover {
   color: var(--text-primary);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 /* ── Agentic toggle ────────────────────────────────────────────────────────── */
