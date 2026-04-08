@@ -178,6 +178,21 @@ function AppInner() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
+  // Auto-open Preview when AI response mentions a localhost URL
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const url = (e as CustomEvent).detail?.url;
+      if (url) {
+        setSidebarPanel("preview");
+        // Store URL so PreviewPanel can pick it up
+        localStorage.setItem("wren:preview-auto-url", url);
+        window.dispatchEvent(new Event("wren:preview-url-changed"));
+      }
+    };
+    window.addEventListener("wren:open-preview", handler);
+    return () => window.removeEventListener("wren:open-preview", handler);
+  }, []);
+
   return (
     <div className={styles.shell}>
       {/* ── Top: browser-style project tabs (full width) ── */}

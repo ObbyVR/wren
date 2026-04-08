@@ -196,7 +196,18 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
       }
 
       // Persist messages after response completes
-      setMessages((prev) => { saveMessages(sessionId, prev); return prev; });
+      setMessages((prev) => {
+        saveMessages(sessionId, prev);
+        // Auto-open Preview if response mentions a localhost URL
+        const lastMsg = prev.find((m) => m.id === event.requestId);
+        if (lastMsg) {
+          const urlMatch = lastMsg.content.match(/https?:\/\/localhost[:\d]*/);
+          if (urlMatch) {
+            window.dispatchEvent(new CustomEvent("wren:open-preview", { detail: { url: urlMatch[0] } }));
+          }
+        }
+        return prev;
+      });
     });
 
     const offError = window.wren.onAiStreamError((event) => {

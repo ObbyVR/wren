@@ -34,6 +34,25 @@ export function PreviewPanel() {
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const previewCreatedRef = useRef(false);
 
+  // Auto-open when AI sends a URL
+  useEffect(() => {
+    const handler = () => {
+      const autoUrl = localStorage.getItem("wren:preview-auto-url");
+      if (autoUrl && !isOpen) {
+        localStorage.removeItem("wren:preview-auto-url");
+        setInputUrl(autoUrl);
+        setUrl(autoUrl);
+        setIsOpen(true);
+        setTimeout(() => openEmbeddedPreview(autoUrl), 200);
+      }
+    };
+    window.addEventListener("wren:preview-url-changed", handler);
+    // Also check on mount
+    handler();
+    return () => window.removeEventListener("wren:preview-url-changed", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   const cleanupRef = useRef<(() => void)[]>([]);
 
   // ── Bridge event subscriptions ────────────────────────────────────────────
