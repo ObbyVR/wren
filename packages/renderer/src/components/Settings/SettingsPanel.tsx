@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useProviders, PROVIDER_META } from "../../store/providerStore";
 import { useProjects } from "../../store/projectStore";
 import { useAgentic } from "../../store/agenticStore";
-import type { ProviderId, ProviderConfig, ApprovalMode, LicenseStatus, TierLimits } from "@wren/shared";
+import type { ProviderId, ProviderConfig, ApprovalMode, LicenseStatus, TierLimits, CredentialEntry } from "@wren/shared";
 import styles from "./SettingsPanel.module.css";
 
-type Section = "providers" | "agentic" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
+type Section = "providers" | "vault" | "agentic" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
 
 const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "ollama"];
 
@@ -170,6 +170,17 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
   // Telemetry state
   const [telemetryOptedIn, setTelemetryOptedIn] = useState(false);
 
+  // Vault state
+  const [credentials, setCredentials] = useState<CredentialEntry[]>([]);
+  const [vaultAdding, setVaultAdding] = useState(false);
+  const [vaultProvider, setVaultProvider] = useState<string>("anthropic");
+  const [vaultAlias, setVaultAlias] = useState("default");
+  const [vaultKey, setVaultKey] = useState("");
+  const [vaultLabel, setVaultLabel] = useState("");
+  const [vaultError, setVaultError] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [editLabelValue, setEditLabelValue] = useState("");
+
   useEffect(() => {
     void window.wren.invoke("license:get-status").then((s) => {
       setLicenseStatus(s);
@@ -180,6 +191,7 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
     void window.wren.invoke("telemetry:get-settings").then((s) => {
       setTelemetryOptedIn(s.optedIn);
     });
+    void window.wren.invoke("credentials:list").then(setCredentials);
   }, []);
 
   // Sync legacy Anthropic key from existing KeySettings flow
@@ -249,6 +261,40 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
     await window.wren.invoke("telemetry:set-opted-in", { optedIn });
   }, []);
 
+  const refreshCredentials = useCallback(() => {
+    void window.wren.invoke("credentials:list").then(setCredentials);
+  }, []);
+
+  const handleVaultAdd = useCallback(async () => {
+    setVaultError(null);
+    const result = await window.wren.invoke("credentials:set", {
+      providerId: vaultProvider,
+      alias: vaultAlias.trim() || "default",
+      key: vaultKey.trim(),
+      label: vaultLabel.trim() || undefined,
+    });
+    if (result.valid) {
+      setVaultAdding(false);
+      setVaultKey("");
+      setVaultLabel("");
+      setVaultAlias("default");
+      refreshCredentials();
+    } else {
+      setVaultError(result.error ?? "Invalid key");
+    }
+  }, [vaultProvider, vaultAlias, vaultKey, vaultLabel, refreshCredentials]);
+
+  const handleVaultRemove = useCallback(async (providerId: string, alias: string) => {
+    await window.wren.invoke("credentials:remove", { providerId, alias });
+    refreshCredentials();
+  }, [refreshCredentials]);
+
+  const handleVaultLabelSave = useCallback(async (providerId: string, alias: string, label: string) => {
+    await window.wren.invoke("credentials:set-meta", { providerId, alias, label });
+    setEditingLabel(null);
+    refreshCredentials();
+  }, [refreshCredentials]);
+
   const handleTest = useCallback(
     async (id: ProviderId) => {
       const config = getProvider(id);
@@ -276,7 +322,7 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
         {/* Sidebar */}
         <nav className={styles.sidebar}>
           <p className={styles.sidebarTitle}>Settings</p>
-          {(["providers", "agentic", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
+          {(["providers", "vault", "agentic", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
             <button
               key={s}
               className={`${styles.navItem} ${section === s ? styles.navItemActive : ""}`}
@@ -338,6 +384,127 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
                     </select>
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {section === "vault" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Credential Vault</h2>
+              <p className={styles.sectionDesc}>
+                All stored API keys across providers. Keys are encrypted with your OS keychain.
+              </p>
+
+              {credentials.length === 0 && !vaultAdding && (
+                <p className={styles.sectionDesc} style={{ fontStyle: "italic" }}>
+                  No credentials stored yet. Add one below.
+                </p>
+              )}
+
+              {credentials.length > 0 && (
+                <table className={styles.shortcutTable} style={{ marginBottom: "1rem" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#9090b0", fontSize: "0.7rem" }}>Provider</th>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#9090b0", fontSize: "0.7rem" }}>Alias</th>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#9090b0", fontSize: "0.7rem" }}>Label</th>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#9090b0", fontSize: "0.7rem" }}>Key</th>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#9090b0", fontSize: "0.7rem" }}>Created</th>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#9090b0", fontSize: "0.7rem" }}>Last used</th>
+                      <th style={{ padding: "4px 8px" }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {credentials.map((c) => {
+                      const metaId = `${c.providerId}:${c.alias}`;
+                      const isEditing = editingLabel === metaId;
+                      return (
+                        <tr key={metaId}>
+                          <td className={styles.shortcutKey}>
+                            <span className={styles.providerDot} style={{ background: PROVIDER_META[c.providerId as ProviderId]?.color ?? "#888" }} />
+                            {PROVIDER_META[c.providerId as ProviderId]?.name ?? c.providerId}
+                          </td>
+                          <td className={styles.shortcutDesc}>{c.alias}</td>
+                          <td className={styles.shortcutDesc}>
+                            {isEditing ? (
+                              <input
+                                className={styles.formInput}
+                                style={{ width: "100px", padding: "2px 4px", fontSize: "0.75rem" }}
+                                value={editLabelValue}
+                                onChange={(e) => setEditLabelValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") void handleVaultLabelSave(c.providerId, c.alias, editLabelValue);
+                                  if (e.key === "Escape") setEditingLabel(null);
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                style={{ cursor: "pointer", borderBottom: "1px dashed #555" }}
+                                onClick={() => { setEditingLabel(metaId); setEditLabelValue(c.label ?? ""); }}
+                                title="Click to edit label"
+                              >
+                                {c.label || "—"}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#9090b0", padding: "4px 8px" }}>
+                            {c.keyMasked}
+                          </td>
+                          <td className={styles.shortcutDesc} style={{ fontSize: "0.65rem" }}>
+                            {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "—"}
+                          </td>
+                          <td className={styles.shortcutDesc} style={{ fontSize: "0.65rem" }}>
+                            {c.lastUsedAt ? new Date(c.lastUsedAt).toLocaleDateString() : "—"}
+                          </td>
+                          <td>
+                            <button
+                              className={styles.btnDanger}
+                              style={{ padding: "2px 6px", fontSize: "0.65rem" }}
+                              onClick={() => void handleVaultRemove(c.providerId, c.alias)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+
+              {vaultAdding ? (
+                <div style={{ border: "1px solid #333", borderRadius: "6px", padding: "12px", marginTop: "8px" }}>
+                  <div className={styles.formRow}>
+                    <label className={styles.formLabel}>Provider</label>
+                    <select className={styles.formSelect} value={vaultProvider} onChange={(e) => setVaultProvider(e.target.value)}>
+                      {PROVIDERS.map((pid) => (
+                        <option key={pid} value={pid === "anthropic" ? "claude" : pid}>{PROVIDER_META[pid].name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.formLabel}>Alias</label>
+                    <input className={styles.formInput} placeholder="default" value={vaultAlias} onChange={(e) => setVaultAlias(e.target.value)} />
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.formLabel}>API key</label>
+                    <input className={styles.formInput} type="password" placeholder="sk-..." value={vaultKey} onChange={(e) => setVaultKey(e.target.value)} />
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.formLabel}>Label (optional)</label>
+                    <input className={styles.formInput} placeholder="e.g. Production" value={vaultLabel} onChange={(e) => setVaultLabel(e.target.value)} />
+                  </div>
+                  {vaultError && <p style={{ color: "#e05c5c", fontSize: "0.75rem", margin: "4px 0" }}>{vaultError}</p>}
+                  <div className={styles.providerActions}>
+                    <button className={styles.btnSecondary} onClick={() => { setVaultAdding(false); setVaultError(null); }}>Cancel</button>
+                    <button className={styles.btnPrimary} disabled={!vaultKey.trim()} onClick={() => void handleVaultAdd()}>Save & Validate</button>
+                  </div>
+                </div>
+              ) : (
+                <button className={styles.btnPrimary} onClick={() => setVaultAdding(true)} style={{ marginTop: "8px" }}>
+                  + Add Key
+                </button>
               )}
             </div>
           )}

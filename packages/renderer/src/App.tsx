@@ -4,7 +4,8 @@ import type { Layout } from "react-resizable-panels";
 import { FileTree } from "./components/FileTree";
 import { Editor } from "./components/Editor";
 import { Terminal } from "./components/Terminal";
-import { ChatPanel } from "./components/ChatPanel";
+import { ChatStack } from "./components/ChatStack";
+import { ChatSessionProvider } from "./store/chatSessionStore";
 import { TabBar } from "./components/TabBar";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
 import { CostDashboard } from "./components/CostDashboard/CostDashboard";
@@ -75,6 +76,7 @@ function ProjectWorkspace({ project, visible, sidebarPanel }: WorkspaceProps) {
   const showGit = sidebarPanel === "git";
 
   return (
+    <ChatSessionProvider projectId={project.id} defaultProviderId={project.providerId}>
     <div
       className={styles.workspace}
       style={{ display: visible ? "flex" : "none" }}
@@ -98,9 +100,9 @@ function ProjectWorkspace({ project, visible, sidebarPanel }: WorkspaceProps) {
           localStorage.setItem(`${STORAGE_KEY_LAYOUT_H}:${project.id}`, JSON.stringify(layout))
         }
       >
-        {/* LEFT: AI Chat */}
+        {/* LEFT: AI Chat Stack (accordion) */}
         <Panel defaultSize={30} minSize={1} collapsible>
-          <ChatPanel />
+          <ChatStack />
         </Panel>
 
         <Separator className={styles.hHandle} />
@@ -144,6 +146,7 @@ function ProjectWorkspace({ project, visible, sidebarPanel }: WorkspaceProps) {
         )}
       </Group>
     </div>
+    </ChatSessionProvider>
   );
 }
 

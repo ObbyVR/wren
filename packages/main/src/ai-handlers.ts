@@ -2,8 +2,13 @@ import { type BrowserWindow, type IpcMainInvokeEvent } from "electron";
 import { ClaudeProvider, GeminiProvider, OpenAIProvider, transferContext } from "@wren/ai";
 import type { AIProvider } from "@wren/ai";
 import type { IpcChannelMap } from "@wren/shared";
-import { getKey, hasKey, listAliases, removeKey, setKey, type ProviderId } from "./key-store";
+import {
+  getKey, hasKey, listAliases, removeKey, setKey,
+  listAllKeys, setKeyMeta, removeKeyMeta, touchKeyUsage,
+  type ProviderId,
+} from "./key-store";
 import { buildAgenticSystemPrompt, executeAgenticLoop } from "./agentic-engine";
+import { sendViaCli } from "./cli-subscription-provider";
 
 // Typed handle helper (mirrors pattern in index.ts)
 type TypedHandle = <C extends keyof IpcChannelMap>(
@@ -142,13 +147,69 @@ export function registerAiHandlers(
     projectConfigs.set(projectId, config);
   });
 
+  // ── Credential Vault ──────────────────────────────────────────────────────────
+
+  handle("credentials:list", () => listAllKeys());
+
+  handle("credentials:set", async (_event, { providerId, alias, key, label }) => {
+    const pid = providerId as ProviderId;
+    const provider = buildProvider(pid, key);
+    let valid: boolean;
+    try {
+      valid = await provider.validateKey(key);
+    } catch {
+      return { valid: false, error: "Network error while validating key" };
+    }
+    if (valid) {
+      setKey(pid, key, alias);
+      setKeyMeta(pid, alias, label);
+      return { valid: true };
+    }
+    return { valid: false, error: "Invalid API key (authentication failed)" };
+  });
+
+  handle("credentials:remove", (_event, { providerId, alias }) => {
+    removeKey(providerId as ProviderId, alias);
+    removeKeyMeta(providerId as ProviderId, alias);
+  });
+
+  handle("credentials:set-meta", (_event, { providerId, alias, label }) => {
+    setKeyMeta(providerId as ProviderId, alias, label);
+  });
+
   // ── Chat / streaming ─────────────────────────────────────────────────────────
 
   handle("ai:send-message", async (_event, payload) => {
     const { requestId, messages, model, systemPrompt, agenticMode, projectRoot, openFiles } = payload;
     const providerId = (payload.providerId ?? "claude") as ProviderId;
     const accountAlias = payload.accountAlias ?? "default";
+    const sessionMode = payload.sessionMode ?? "api";
+    const chatSessionId = payload.chatSessionId ?? "";
     const win = getWindow();
+
+    // ── Subscription mode: route through local CLI ────────────────────────────
+    if (sessionMode === "subscription") {
+      // Build prompt from last user message (CLI takes a single prompt, not history)
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+      const prompt = lastUserMsg?.content ?? "";
+      if (!prompt) {
+        win?.webContents.send("ai:stream-error", { requestId, error: "Empty prompt" });
+        return;
+      }
+
+      sendViaCli(requestId, prompt, {
+        providerId,
+        model,
+        cwd: projectRoot ?? process.env.HOME ?? "",
+        chatSessionId,
+      }, win);
+      return;
+    }
+
+    // ── API mode: use SDK with API key ────────────────────────────────────────
+
+    // Track key usage
+    touchKeyUsage(providerId, accountAlias);
 
     const key = getKey(providerId, accountAlias);
     if (!key) {
@@ -168,7 +229,6 @@ export function registerAiHandlers(
         let resolvedSystemPrompt = systemPrompt;
 
         if (agenticMode && projectRoot) {
-          // Build context-injected system prompt for agentic mode
           resolvedSystemPrompt = await buildAgenticSystemPrompt(
             projectRoot,
             openFiles ?? []
@@ -187,7 +247,6 @@ export function registerAiHandlers(
             outputTokens: usage.outputTokens,
           });
         } else {
-          // Normal (non-agentic) streaming
           const usage = await provider.sendMessage(
             messages,
             { model, ...(resolvedSystemPrompt !== undefined ? { systemPrompt: resolvedSystemPrompt } : {}), maxTokens: 4096 },

@@ -10,18 +10,11 @@ directories:
 # ─── Bundle ──────────────────────────────────────────────────────────────────
 asar: true
 files:
-  - packages/main/dist/**/*
+  - packages/main/dist/bundle.js
+  - packages/main/dist/bundle.js.map
   - packages/preload/dist/**/*
   - packages/renderer/dist/**/*
-  - packages/ai/dist/**/*
-  - packages/ai/package.json
-  - packages/shared/dist/**/*
-  - packages/shared/package.json
-  - packages/license/dist/**/*
-  - packages/license/package.json
-  - node_modules/**/*
-  - "!node_modules/.pnpm"
-  - "!node_modules/.modules.yaml"
+  - node_modules/node-pty/**/*
   - package.json
 
 # Extra native modules that must be unpacked for require() to work

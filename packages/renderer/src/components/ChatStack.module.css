@@ -1,0 +1,157 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-sidebar);
+  overflow: hidden;
+}
+
+/* ── Stack header ────────────────────────────────────────────────────────── */
+
+.stackHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem;
+  height: 36px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.stackLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.newChatWrapper {
+  position: relative;
+}
+
+.newChatBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.newChatBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* ── Session list (accordion) ────────────────────────────────────────────── */
+
+.sessionList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sessionItem {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Expanded sessions share available space equally */
+.sessionItem:not(.sessionCollapsed) {
+  flex: 1;
+}
+
+/* Collapsed = fixed header height only */
+.sessionCollapsed {
+  flex: 0 0 auto;
+}
+
+/* ── Session header ──────────────────────────────────────────────────────── */
+
+.sessionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.6rem;
+  height: 32px;
+  background: var(--bg-tab);
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.sessionHeader:hover {
+  background: color-mix(in srgb, var(--bg-tab) 80%, var(--accent));
+}
+
+.providerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sessionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionModel {
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: 8px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: color 0.12s, background 0.12s;
+}
+
+.closeBtn:hover {
+  color: #e06c75;
+  background: color-mix(in srgb, #e06c75 12%, transparent);
+}
+
+/* ── Session body ────────────────────────────────────────────────────────── */
+
+.sessionBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

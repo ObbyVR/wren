@@ -11,6 +11,7 @@ import { agenticEngine } from "./agentic-engine";
 import { registerGitHandlers } from "./git-handlers";
 import { registerLicenseHandlers } from "./license-handlers";
 import { registerTelemetryHandlers } from "./telemetry-handlers";
+import { ChatViewManager } from "./chat-view-manager";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -23,6 +24,7 @@ let terminalCounter = 0;
 let mainWindow: BrowserWindow | null = null;
 
 const bridgeManager = new BridgeManager({ getWindow: () => mainWindow });
+const chatViewManager = new ChatViewManager({ getWindow: () => mainWindow });
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -55,6 +57,8 @@ function createWindow(): BrowserWindow {
       try { terminal.kill(); } catch { /* ignore */ }
     }
     terminals.clear();
+    // Destroy all embedded chat views
+    chatViewManager.destroyAll();
   });
 
   return win;
@@ -172,6 +176,10 @@ function registerHandlers(): void {
     });
   });
 
+  handle("project:set-provider-profile", (_event, { projectId, providerId, alias }) => {
+    projectStore.setProviderProfile(projectId, providerId, alias);
+  });
+
   // System dialog handlers
   handle("dialog:open-folder", async () => {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
@@ -262,6 +270,23 @@ function registerHandlers(): void {
 
   // Telemetry handlers
   registerTelemetryHandlers(handle);
+
+  // Chat WebContentsView handlers (subscription-based AI)
+  handle("chat-view:create", (_event, { sessionId, providerId, bounds }) => {
+    chatViewManager.create(sessionId, providerId, bounds);
+  });
+
+  handle("chat-view:resize", (_event, { sessionId, bounds }) => {
+    chatViewManager.resize(sessionId, bounds);
+  });
+
+  handle("chat-view:set-visible", (_event, { sessionId, visible }) => {
+    chatViewManager.setVisible(sessionId, visible);
+  });
+
+  handle("chat-view:destroy", (_event, { sessionId }) => {
+    chatViewManager.destroy(sessionId);
+  });
 
   // Browser Bridge (Nexus Bridge) handlers
   handle("bridge:open-preview", (_event, payload) => {

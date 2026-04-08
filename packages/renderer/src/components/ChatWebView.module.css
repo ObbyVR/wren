@@ -1,0 +1,16 @@
+.root {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  /* The actual browser content is rendered by WebContentsView at OS level.
+     This div acts as a measurement target for bounds calculation. */
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 12px;
+}

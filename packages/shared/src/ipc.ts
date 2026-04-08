@@ -363,6 +363,48 @@ export interface IpcChannelMap {
     response: void;
   };
 
+  // Credential Vault
+  "credentials:list": {
+    request: void;
+    response: CredentialEntry[];
+  };
+  "credentials:set": {
+    request: { providerId: string; alias: string; key: string; label?: string | undefined };
+    response: { valid: boolean; error?: string };
+  };
+  "credentials:remove": {
+    request: { providerId: string; alias: string };
+    response: void;
+  };
+  "credentials:set-meta": {
+    request: { providerId: string; alias: string; label: string };
+    response: void;
+  };
+
+  // Project provider profile (which key alias to use per provider)
+  "project:set-provider-profile": {
+    request: { projectId: string; providerId: string; alias: string };
+    response: void;
+  };
+
+  // Chat WebContentsView — embedded browser for subscription-based AI
+  "chat-view:create": {
+    request: { sessionId: string; providerId: string; bounds: ViewBounds };
+    response: void;
+  };
+  "chat-view:resize": {
+    request: { sessionId: string; bounds: ViewBounds };
+    response: void;
+  };
+  "chat-view:set-visible": {
+    request: { sessionId: string; visible: boolean };
+    response: void;
+  };
+  "chat-view:destroy": {
+    request: { sessionId: string };
+    response: void;
+  };
+
   // Browser Bridge — reload current preview page
   "bridge:reload-preview": {
     request: { wrenWindowId: string };
@@ -446,6 +488,8 @@ export interface AiSendMessagePayload {
   model: string;
   providerId?: string; // which provider to use; falls back to "claude" for compat
   accountAlias?: string; // which key alias to use; falls back to "default"
+  sessionMode?: ChatSessionMode; // "subscription" uses CLI, "api" uses SDK, "browser" uses webview
+  chatSessionId?: string; // accordion session ID for CLI session tracking
   systemPrompt?: string;
   agenticMode?: boolean;  // enables tool use + context injection
   projectRoot?: string;   // project root path for context injection & tool execution
@@ -499,6 +543,20 @@ export interface AiStreamToolResultEvent {
 
 export type ProviderId = "anthropic" | "openai" | "gemini" | "ollama";
 
+/** How a chat session connects to the AI provider */
+export type ChatSessionMode = "subscription" | "api" | "browser";
+
+/** State of a single chat session inside the accordion stack */
+export interface ChatSessionState {
+  id: string;
+  providerId: ProviderId;
+  modelId: string;
+  label: string;
+  collapsed: boolean;
+  /** "browser" = embedded webview loading provider site, "api" = SDK-based chat */
+  mode: ChatSessionMode;
+}
+
 export interface ProviderConfig {
   id: ProviderId;
   name: string;
@@ -527,6 +585,17 @@ export interface CostEntry {
   outputTokens: number;
   /** ISO date string YYYY-MM-DD for daily bucketing */
   date: string;
+}
+
+// ── Credential Vault types ────────────────────────────────────────────────────
+
+export interface CredentialEntry {
+  providerId: string;
+  alias: string;
+  label?: string | undefined;
+  keyMasked: string;
+  createdAt: number;
+  lastUsedAt?: number | undefined;
 }
 
 // ── Multi-provider IPC types ───────────────────────────────────────────────────
@@ -654,6 +723,15 @@ export interface GitOAuthStatus {
   username?: string;
   avatarUrl?: string;
   scopes?: string[];
+}
+
+// ── Chat WebContentsView types ────────────────────────────────────────────
+
+export interface ViewBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 // ── Browser Bridge (Nexus Bridge) types ───────────────────────────────────────

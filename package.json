@@ -2,11 +2,11 @@
   "name": "wren",
   "version": "0.1.0",
   "private": true,
-  "main": "packages/main/dist/index.js",
+  "main": "packages/main/dist/bundle.js",
   "description": "Wren IDE — BYOK-first, multi-provider AI, multi-project desktop IDE",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "build": "pnpm --filter @wren/shared build && pnpm --filter @wren/ai build && pnpm --filter @wren/license build && pnpm --filter @wren/preload build && pnpm --filter @wren/main build && pnpm --filter @wren/renderer build",
+    "build": "pnpm --filter @wren/shared build && pnpm --filter @wren/ai build && pnpm --filter @wren/license build && pnpm --filter @wren/preload build && pnpm --filter @wren/main build && node scripts/build-main.mjs && pnpm --filter @wren/renderer build",
     "lint": "eslint packages/*/src --ext .ts,.tsx",
     "typecheck": "pnpm -r run typecheck",
     "dist": "pnpm build && electron-builder",
@@ -24,12 +24,16 @@
     "node": ">=20",
     "pnpm": ">=9"
   },
+  "dependencies": {
+    "node-pty": "^1.1.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "electron": "^33.3.1",
     "electron-builder": "^25.1.8",
+    "esbuild": "^0.28.0",
     "eslint": "^9.21.0",
     "globals": "^17.4.0",
     "prettier": "^3.4.2",

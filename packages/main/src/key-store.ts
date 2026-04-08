@@ -66,3 +66,96 @@ export function listAliases(provider: ProviderId): string[] {
   const keys = readKeysFile();
   return Object.keys(keys[provider] ?? {});
 }
+
+// ── Key metadata ──────────────────────────────────────────────────────────────
+
+export interface KeyMeta {
+  providerId: ProviderId;
+  alias: string;
+  label?: string | undefined;
+  createdAt: number;
+  lastUsedAt?: number | undefined;
+}
+
+const META_FILE = path.join(app.getPath("userData"), "wren-keys-meta.json");
+
+type MetaFile = KeyMeta[];
+
+function readMetaFile(): MetaFile {
+  try {
+    const raw = fs.readFileSync(META_FILE, "utf-8");
+    return JSON.parse(raw) as MetaFile;
+  } catch {
+    return [];
+  }
+}
+
+function writeMetaFile(data: MetaFile): void {
+  fs.writeFileSync(META_FILE, JSON.stringify(data, null, 2), "utf-8");
+}
+
+export function getKeyMeta(providerId: ProviderId, alias = "default"): KeyMeta | undefined {
+  return readMetaFile().find(
+    (m) => m.providerId === providerId && m.alias === alias,
+  );
+}
+
+export function setKeyMeta(providerId: ProviderId, alias: string, label?: string): void {
+  const metas = readMetaFile();
+  const idx = metas.findIndex(
+    (m) => m.providerId === providerId && m.alias === alias,
+  );
+  if (idx >= 0) {
+    if (label !== undefined) metas[idx].label = label;
+  } else {
+    metas.push({ providerId, alias, label, createdAt: Date.now() });
+  }
+  writeMetaFile(metas);
+}
+
+export function removeKeyMeta(providerId: ProviderId, alias: string): void {
+  const metas = readMetaFile().filter(
+    (m) => !(m.providerId === providerId && m.alias === alias),
+  );
+  writeMetaFile(metas);
+}
+
+export function touchKeyUsage(providerId: ProviderId, alias = "default"): void {
+  const metas = readMetaFile();
+  const entry = metas.find(
+    (m) => m.providerId === providerId && m.alias === alias,
+  );
+  if (entry) {
+    entry.lastUsedAt = Date.now();
+    writeMetaFile(metas);
+  }
+}
+
+export function listAllKeys(): import("@wren/shared").CredentialEntry[] {
+  const keys = readKeysFile();
+  const metas = readMetaFile();
+  const result: import("@wren/shared").CredentialEntry[] = [];
+
+  for (const [pid, aliases] of Object.entries(keys)) {
+    const providerId = pid as ProviderId;
+    for (const alias of Object.keys(aliases ?? {})) {
+      const plain = getKey(providerId, alias);
+      const masked = plain
+        ? "••••••" + plain.slice(-6)
+        : "••••••";
+      const meta = metas.find(
+        (m) => m.providerId === providerId && m.alias === alias,
+      );
+      const entry: import("@wren/shared").CredentialEntry = {
+        providerId,
+        alias,
+        keyMasked: masked,
+        createdAt: meta?.createdAt ?? 0,
+      };
+      if (meta?.label) entry.label = meta.label;
+      if (meta?.lastUsedAt) entry.lastUsedAt = meta.lastUsedAt;
+      result.push(entry);
+    }
+  }
+  return result;
+}

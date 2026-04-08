@@ -15,6 +15,8 @@ interface PersistedProject {
   aiProvider: string;
   model: string;
   approvalMode: ApprovalMode;
+  /** Per-provider key alias override. E.g. { anthropic: "prod", openai: "personal" } */
+  providerProfile?: Record<string, string>;
 }
 
 function readPersisted(): PersistedProject[] {
@@ -81,6 +83,24 @@ class ProjectStore {
   close(id: string): void {
     this.projects.delete(id);
     this.persist();
+  }
+
+  setProviderProfile(projectId: string, providerId: string, alias: string): void {
+    const existing = this.projects.get(projectId);
+    if (!existing) return;
+    const persisted = readPersisted();
+    const p = persisted.find((pp) => pp.id === projectId);
+    if (p) {
+      if (!p.providerProfile) p.providerProfile = {};
+      p.providerProfile[providerId] = alias;
+      writePersisted(persisted);
+    }
+  }
+
+  getProviderAlias(projectId: string, providerId: string): string {
+    const persisted = readPersisted();
+    const p = persisted.find((pp) => pp.id === projectId);
+    return p?.providerProfile?.[providerId] ?? "default";
   }
 
   update(id: string, patch: Partial<Pick<ProjectInfo, "activeFile" | "openFiles" | "model" | "approvalMode">>): ProjectInfo {

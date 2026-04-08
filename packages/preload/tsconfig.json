@@ -4,7 +4,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2022", "DOM"],
-    "target": "ES2022"
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node"
   },
   "include": ["src"],
   "references": [{ "path": "../shared" }]
