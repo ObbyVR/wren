@@ -202,9 +202,9 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
         const lastMsg = prev.find((m) => m.id === event.requestId);
         if (lastMsg) {
           // Match any http(s) URL
-          const urlMatch = lastMsg.content.match(/https?:\/\/[^\s\])"']+/);
-          // Match file paths ending in .html
-          const fileMatch = lastMsg.content.match(/(?:^|\s)(\/[^\s]+\.html?)(?:\s|$)/m);
+          const urlMatch = lastMsg.content.match(/https?:\/\/[^\s\])"'>,]+/);
+          // Match absolute file paths ending in .html (tolerates trailing punctuation)
+          const fileMatch = lastMsg.content.match(/(\/[^\s,>"']+\.html)\b/);
           const previewUrl = urlMatch?.[0] ?? (fileMatch ? `file://${fileMatch[1]}` : null);
           if (previewUrl) {
             window.dispatchEvent(new CustomEvent("wren:open-preview", { detail: { url: previewUrl } }));
