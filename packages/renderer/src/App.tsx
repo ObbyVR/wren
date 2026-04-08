@@ -184,33 +184,7 @@ function AppInner() {
       <div className={styles.mainArea}>
         {/* Left toolbar column */}
         <div className={styles.toolbar}>
-          <button
-            className={styles.toolBtn}
-            onClick={() => setShowSettings(true)}
-            title="Settings (Cmd+,)"
-          >
-            ⚙
-          </button>
-          <button
-            className={styles.toolBtn}
-            onClick={() => setShowCostDashboard(true)}
-            title="Billing & costs"
-          >
-            $
-          </button>
-
-          {agenticEnabled && (
-            <button
-              className={`${styles.toolBtn} ${styles.toolBtnAgent}`}
-              onClick={() => setActionLogOpen((v) => !v)}
-              title={`Agent · ${actionLog.length} actions`}
-            >
-              <span className={styles.agenticDot} />
-            </button>
-          )}
-
-          <span className={styles.toolSpacer} />
-
+          {/* Top: workspace tools */}
           <button
             className={`${styles.toolBtn} ${sidebarPanel === "files" ? styles.toolBtnActive : ""}`}
             onClick={() => toggleSidebarPanel("files")}
@@ -231,6 +205,34 @@ function AppInner() {
             title="Git panel"
           >
             ⎇
+          </button>
+
+          {agenticEnabled && (
+            <button
+              className={`${styles.toolBtn} ${styles.toolBtnAgent}`}
+              onClick={() => setActionLogOpen((v) => !v)}
+              title={`Agent · ${actionLog.length} actions`}
+            >
+              <span className={styles.agenticDot} />
+            </button>
+          )}
+
+          <span className={styles.toolSpacer} />
+
+          {/* Bottom: settings & billing */}
+          <button
+            className={styles.toolBtn}
+            onClick={() => setShowCostDashboard(true)}
+            title="Billing & costs"
+          >
+            $
+          </button>
+          <button
+            className={styles.toolBtn}
+            onClick={() => setShowSettings(true)}
+            title="Settings (Cmd+,)"
+          >
+            ⚙
           </button>
         </div>
 
