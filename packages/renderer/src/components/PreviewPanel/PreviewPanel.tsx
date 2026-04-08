@@ -19,18 +19,20 @@ const DEFAULT_PREVIEW_URL = "http://localhost:3000";
 const WREN_WINDOW_ID = "wren-preview-main";
 
 export function PreviewPanel() {
-  const [url, setUrl] = useState(DEFAULT_PREVIEW_URL);
+  const [, setUrl] = useState(DEFAULT_PREVIEW_URL);
   const [inputUrl, setInputUrl] = useState(DEFAULT_PREVIEW_URL);
   const [isOpen, setIsOpen] = useState(false);
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>({ connected: false, windowCount: 0 });
   const [networkLog, setNetworkLog] = useState<NetworkEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"preview" | "network">("preview");
   const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [, setIsRefreshing] = useState(false);
 
   const { activeProject } = useProjects();
   const isOpenRef = useRef(false);
   isOpenRef.current = isOpen;
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const previewCreatedRef = useRef(false);
 
   const cleanupRef = useRef<(() => void)[]>([]);
 
@@ -122,35 +124,102 @@ export function PreviewPanel() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
+  // Create/update embedded WebContentsView for preview
+  const openEmbeddedPreview = useCallback((targetUrl: string) => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const bounds = {
+      x: Math.round(rect.left),
+      y: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    };
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+
+    if (!previewCreatedRef.current) {
+      previewCreatedRef.current = true;
+      void window.wren.invoke("chat-view:create", {
+        sessionId: WREN_WINDOW_ID,
+        providerId: targetUrl, // reuse providerId field as URL
+        bounds,
+      });
+    } else {
+      void window.wren.invoke("chat-view:resize", {
+        sessionId: WREN_WINDOW_ID,
+        bounds,
+      });
+    }
+  }, []);
+
+  // ResizeObserver for embedded preview
+  useEffect(() => {
+    const el = previewContainerRef.current;
+    if (!el || !isOpen) return;
+
+    const observer = new ResizeObserver(() => {
+      if (!previewCreatedRef.current) return;
+      const rect = el.getBoundingClientRect();
+      const bounds = {
+        x: Math.round(rect.left),
+        y: Math.round(rect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      };
+      if (bounds.width > 0 && bounds.height > 0) {
+        void window.wren.invoke("chat-view:resize", { sessionId: WREN_WINDOW_ID, bounds });
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isOpen]);
+
   const handleOpen = useCallback(async () => {
     setError(null);
     setNetworkLog([]);
     const trimmed = inputUrl.trim();
     setUrl(trimmed);
-    try {
-      await window.wren.invoke("bridge:open-preview", {
-        wrenWindowId: WREN_WINDOW_ID,
-        url: trimmed,
-        width: 1280,
-        height: 800,
-      });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    setIsOpen(true);
+
+    if (bridgeStatus.connected) {
+      // Use Chrome bridge if available
+      try {
+        await window.wren.invoke("bridge:open-preview", {
+          wrenWindowId: WREN_WINDOW_ID,
+          url: trimmed,
+          width: 1280,
+          height: 800,
+        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    } else {
+      // Fallback: embedded WebContentsView
+      setTimeout(() => openEmbeddedPreview(trimmed), 100);
     }
-  }, [inputUrl]);
+  }, [inputUrl, bridgeStatus.connected, openEmbeddedPreview]);
 
   const handleClose = useCallback(async () => {
-    try {
-      await window.wren.invoke("bridge:close-preview", { wrenWindowId: WREN_WINDOW_ID });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    setIsOpen(false);
+    if (previewCreatedRef.current) {
+      previewCreatedRef.current = false;
+      void window.wren.invoke("chat-view:destroy", { sessionId: WREN_WINDOW_ID });
     }
-  }, []);
+    if (bridgeStatus.connected) {
+      try {
+        await window.wren.invoke("bridge:close-preview", { wrenWindowId: WREN_WINDOW_ID });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    }
+  }, [bridgeStatus.connected]);
 
   const handleNavigate = useCallback(async () => {
     const trimmed = inputUrl.trim();
     setUrl(trimmed);
-    if (isOpen) {
+    if (!isOpen) return;
+
+    if (bridgeStatus.connected) {
       try {
         await window.wren.invoke("bridge:navigate-preview", {
           wrenWindowId: WREN_WINDOW_ID,
@@ -159,8 +228,13 @@ export function PreviewPanel() {
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       }
+    } else if (previewCreatedRef.current) {
+      // Destroy and recreate with new URL
+      void window.wren.invoke("chat-view:destroy", { sessionId: WREN_WINDOW_ID });
+      previewCreatedRef.current = false;
+      setTimeout(() => openEmbeddedPreview(trimmed), 100);
     }
-  }, [inputUrl, isOpen]);
+  }, [inputUrl, isOpen, bridgeStatus.connected, openEmbeddedPreview]);
 
   const handleClearNetwork = useCallback(() => setNetworkLog([]), []);
 
@@ -216,8 +290,7 @@ export function PreviewPanel() {
               <button
                 className={`${styles.btn} ${styles.btnPrimary}`}
                 onClick={() => void handleOpen()}
-                disabled={!bridgeStatus.connected}
-                title={!bridgeStatus.connected ? "Install Nexus Bridge extension first" : "Open preview in Chrome"}
+                title="Open preview"
               >
                 ▶ Open
               </button>
@@ -238,42 +311,8 @@ export function PreviewPanel() {
             </div>
           )}
 
-          {!bridgeStatus.connected && (
-            <div className={styles.instructions}>
-              <p className={styles.instructionsTitle}>Setup Nexus Bridge</p>
-              <ol className={styles.instructionsList}>
-                <li>Open <strong>chrome://extensions</strong></li>
-                <li>Enable <strong>Developer mode</strong></li>
-                <li>Click <strong>Load unpacked</strong> and select <code>packages/browser-bridge</code></li>
-                <li>Copy the extension ID shown in Chrome</li>
-                <li>Run: <code>cd packages/browser-bridge/native-host && ./install.sh &lt;extension-id&gt;</code></li>
-                <li>Restart Chrome</li>
-              </ol>
-            </div>
-          )}
-
-          {bridgeStatus.connected && !isOpen && (
-            <div className={styles.emptyState}>
-              <p>No preview open.</p>
-              <p className={styles.hint}>Enter a URL and click <strong>▶ Open</strong> to launch a Chrome popup window.</p>
-            </div>
-          )}
-
-          {isOpen && (
-            <div className={styles.previewActive}>
-              <div className={styles.previewIndicator}>
-                <span className={styles.dotConnected} />
-                Preview open: <a href={url} target="_blank" rel="noreferrer">{url}</a>
-              </div>
-              {isRefreshing && (
-                <div className={styles.refreshingBanner}>
-                  <span className={styles.refreshingDot} />
-                  Refreshing…
-                </div>
-              )}
-              <p className={styles.hint}>The preview runs in a Chrome popup window outside Wren. Network events are captured below.</p>
-            </div>
-          )}
+          {/* Embedded preview — works without bridge */}
+          <div ref={previewContainerRef} className={styles.embeddedPreview} />
         </div>
       )}
 

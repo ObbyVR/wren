@@ -41,7 +41,8 @@ export class ChatViewManager {
     const win = this.getWindow();
     if (!win) return;
 
-    const url = PROVIDER_URLS[providerId] ?? PROVIDER_URLS["claude"];
+    // providerId can be a provider name OR a direct URL (for Preview panel)
+    const url = providerId.startsWith("http") ? providerId : (PROVIDER_URLS[providerId] ?? PROVIDER_URLS["claude"]);
 
     const view = new WebContentsView({
       webPreferences: {

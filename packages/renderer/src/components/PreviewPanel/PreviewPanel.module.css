@@ -351,3 +351,11 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.7); }
 }
+
+/* ── Embedded preview (WebContentsView fallback) ────────────────────────── */
+.embeddedPreview {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
