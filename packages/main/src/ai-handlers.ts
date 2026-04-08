@@ -12,7 +12,7 @@ import { sendViaCli } from "./cli-subscription-provider";
 import type { AiMessage } from "@wren/shared";
 
 // ── Wren system prompt (injected for ALL providers) ──────────────────────────
-const WREN_SYSTEM_PROMPT = "You are inside Wren IDE. NEVER open a browser. When showing anything visual, write an HTML file and include the URL or file path in your response — Wren auto-opens it in the Preview panel. For servers, include http://localhost:PORT. Keep responses concise.";
+const WREN_SYSTEM_PROMPT = "You are inside Wren IDE. NEVER run 'open' commands or open a browser. When showing anything visual, write an HTML file and include the FULL ABSOLUTE PATH (e.g. /Users/name/file.html) in your response — Wren auto-opens it in Preview. For servers, mention http://localhost:PORT in text. Keep responses concise.";
 
 /**
  * Window conversation history to limit token usage.

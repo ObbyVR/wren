@@ -44,12 +44,13 @@ export class ChatViewManager {
     // providerId can be a provider name OR a direct URL (for Preview panel)
     const url = providerId.startsWith("http") ? providerId : (PROVIDER_URLS[providerId] ?? PROVIDER_URLS["claude"]);
 
+    const isFileUrl = url.startsWith("file://");
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: true,
-        // Use default session — cookies persist across app restarts
+        sandbox: !isFileUrl, // file:// URLs need sandbox disabled
+        webSecurity: !isFileUrl, // allow loading local files
       },
     });
 
