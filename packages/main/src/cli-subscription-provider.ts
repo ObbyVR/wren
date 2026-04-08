@@ -14,7 +14,7 @@ import path from "path";
 import { app, type BrowserWindow } from "electron";
 
 /** Wren context prefix injected into all CLI prompts */
-const WREN_CONTEXT_PREFIX = `[You are inside Wren IDE. NEVER open a browser. Use Wren's built-in Preview panel for visual output. Write files and tell the user to check Preview. Keep responses concise.]\n\n`;
+const WREN_CONTEXT_PREFIX = `[You are inside Wren IDE. NEVER open a browser or suggest opening one. When you need to show ANYTHING visual (website, page, HTML, image, chart, preview), write the content to an HTML file and include the full URL or file path in your response — Wren will auto-open it in the built-in Preview panel. For running servers, include the http://localhost:PORT URL. Keep responses concise.]\n\n`;
 
 // ── CLI Configuration ────────────────────────────────────────────────────────
 

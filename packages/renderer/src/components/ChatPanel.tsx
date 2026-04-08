@@ -198,12 +198,16 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
       // Persist messages after response completes
       setMessages((prev) => {
         saveMessages(sessionId, prev);
-        // Auto-open Preview if response mentions a localhost URL
+        // Auto-open Preview if response contains a URL or file path to show
         const lastMsg = prev.find((m) => m.id === event.requestId);
         if (lastMsg) {
-          const urlMatch = lastMsg.content.match(/https?:\/\/localhost[:\d]*/);
-          if (urlMatch) {
-            window.dispatchEvent(new CustomEvent("wren:open-preview", { detail: { url: urlMatch[0] } }));
+          // Match any http(s) URL
+          const urlMatch = lastMsg.content.match(/https?:\/\/[^\s\])"']+/);
+          // Match file paths ending in .html
+          const fileMatch = lastMsg.content.match(/(?:^|\s)(\/[^\s]+\.html?)(?:\s|$)/m);
+          const previewUrl = urlMatch?.[0] ?? (fileMatch ? `file://${fileMatch[1]}` : null);
+          if (previewUrl) {
+            window.dispatchEvent(new CustomEvent("wren:open-preview", { detail: { url: previewUrl } }));
           }
         }
         return prev;
