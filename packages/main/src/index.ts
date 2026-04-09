@@ -12,6 +12,7 @@ import { registerGitHandlers } from "./git-handlers";
 import { registerLicenseHandlers } from "./license-handlers";
 import { registerTelemetryHandlers } from "./telemetry-handlers";
 import { ChatViewManager } from "./chat-view-manager";
+import { startLocalFileServer, getLocalFileServerPort } from "./local-file-server";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -271,6 +272,9 @@ function registerHandlers(): void {
   // Telemetry handlers
   registerTelemetryHandlers(handle);
 
+  // Local file server port
+  handle("preview:get-file-server-port", () => getLocalFileServerPort());
+
   // Chat WebContentsView handlers (subscription-based AI)
   handle("chat-view:create", (_event, { sessionId, providerId, bounds }) => {
     chatViewManager.create(sessionId, providerId, bounds);
@@ -356,7 +360,8 @@ function setupAutoUpdater(): void {
   setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 10_000);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await startLocalFileServer();
   registerHandlers();
   bridgeManager.start();
   createWindow();

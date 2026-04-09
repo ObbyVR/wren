@@ -389,3 +389,38 @@
   flex-shrink: 0;
   animation: agenticPulse 0.8s ease-in-out infinite;
 }
+
+/* ── Inline preview (iframe in chat message) ─────────────────────────────── */
+.inlinePreview {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.inlinePreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-tab);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.inlinePreviewClose {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+}
+
+.inlinePreviewFrame {
+  width: 100%;
+  height: 300px;
+  border: none;
+}

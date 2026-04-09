@@ -88,6 +88,51 @@ function saveMessages(sessionId: string, msgs: ChatMessage[]) {
   } catch { /* quota exceeded — silently drop */ }
 }
 
+// ── Inline preview: shows iframe when AI creates files or mentions URLs ──────
+
+let _fileServerPort = 0;
+
+function InlinePreview({ content }: { content: string }) {
+  const [port, setPort] = useState(_fileServerPort);
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    if (!_fileServerPort) {
+      void window.wren.invoke("preview:get-file-server-port").then((p) => {
+        _fileServerPort = p;
+        setPort(p);
+      });
+    }
+  }, []);
+
+  if (!show) return null;
+
+  // Detect file paths (.html, .htm) or localhost URLs
+  const fileMatch = content.match(/(\/[^\s,>"']+\.html?)\b/);
+  const urlMatch = content.match(/(https?:\/\/localhost[^\s"'>,]*)/);
+
+  const previewSrc = fileMatch && port
+    ? `http://127.0.0.1:${port}/serve?path=${encodeURIComponent(fileMatch[1])}`
+    : urlMatch?.[1] ?? null;
+
+  if (!previewSrc) return null;
+
+  return (
+    <div className={styles.inlinePreview}>
+      <div className={styles.inlinePreviewHeader}>
+        <span>Preview</span>
+        <button onClick={() => setShow(false)} className={styles.inlinePreviewClose}>×</button>
+      </div>
+      <iframe
+        src={previewSrc}
+        className={styles.inlinePreviewFrame}
+        title="AI Preview"
+        sandbox="allow-scripts allow-same-origin"
+      />
+    </div>
+  );
+}
+
 // ── Props ────────────────────────────────────────────────────────────────────
 
 export interface ChatPanelProps {
@@ -461,6 +506,7 @@ export function ChatPanel({ sessionId, providerId, modelId, sessionMode = "api" 
                       </div>
                     )}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <InlinePreview content={msg.content} />
                     {msg.streaming && msg.content === "" && (msg.toolEvents?.length ?? 0) === 0 && (
                       <div className={styles.thinkingRow}>
                         <span className={styles.dots}>

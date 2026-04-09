@@ -387,6 +387,12 @@ export interface IpcChannelMap {
     response: void;
   };
 
+  // Local file server port (for inline preview of AI-generated files)
+  "preview:get-file-server-port": {
+    request: void;
+    response: number;
+  };
+
   // Chat WebContentsView — embedded browser for subscription-based AI
   "chat-view:create": {
     request: { sessionId: string; providerId: string; bounds: ViewBounds };
