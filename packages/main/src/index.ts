@@ -39,6 +39,7 @@ function createWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false, // node-pty requires sandbox disabled
+      webviewTag: true, // enable <webview> for inline preview (like VS Code)
     },
   });
 

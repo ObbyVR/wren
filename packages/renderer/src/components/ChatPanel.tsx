@@ -123,11 +123,12 @@ function InlinePreview({ content }: { content: string }) {
         <span>Preview</span>
         <button onClick={() => setShow(false)} className={styles.inlinePreviewClose}>×</button>
       </div>
-      <iframe
+      {/* webview tag — same as VS Code/Cursor, full Chromium without iframe limits */}
+      <webview
         src={previewSrc}
         className={styles.inlinePreviewFrame}
-        title="AI Preview"
-        sandbox="allow-scripts allow-same-origin"
+        /* @ts-expect-error webview is an Electron-specific tag */
+        allowpopups="false"
       />
     </div>
   );
