@@ -19,7 +19,7 @@ const DEFAULT_PREVIEW_URL = "http://localhost:3000";
 const WREN_WINDOW_ID = "wren-preview-main";
 
 export function PreviewPanel() {
-  const [, setUrl] = useState(DEFAULT_PREVIEW_URL);
+  const [activeUrl, setActiveUrl] = useState("");
   const [inputUrl, setInputUrl] = useState(DEFAULT_PREVIEW_URL);
   const [isOpen, setIsOpen] = useState(false);
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>({ connected: false, windowCount: 0 });
@@ -31,27 +31,22 @@ export function PreviewPanel() {
   const { activeProject } = useProjects();
   const isOpenRef = useRef(false);
   isOpenRef.current = isOpen;
-  const previewContainerRef = useRef<HTMLDivElement>(null);
-  const previewCreatedRef = useRef(false);
 
   // Auto-open when AI sends a URL
   useEffect(() => {
     const handler = () => {
       const autoUrl = localStorage.getItem("wren:preview-auto-url");
-      if (autoUrl && !isOpen) {
+      if (autoUrl) {
         localStorage.removeItem("wren:preview-auto-url");
         setInputUrl(autoUrl);
-        setUrl(autoUrl);
+        setActiveUrl(autoUrl);
         setIsOpen(true);
-        setTimeout(() => openEmbeddedPreview(autoUrl), 200);
       }
     };
     window.addEventListener("wren:preview-url-changed", handler);
-    // Also check on mount
-    handler();
+    handler(); // check on mount
     return () => window.removeEventListener("wren:preview-url-changed", handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, []);
 
   const cleanupRef = useRef<(() => void)[]>([]);
 
@@ -143,117 +138,22 @@ export function PreviewPanel() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  // Create/update embedded WebContentsView for preview
-  const openEmbeddedPreview = useCallback((targetUrl: string) => {
-    const el = previewContainerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const bounds = {
-      x: Math.round(rect.left),
-      y: Math.round(rect.top),
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-    };
-    if (bounds.width <= 0 || bounds.height <= 0) return;
-
-    if (!previewCreatedRef.current) {
-      previewCreatedRef.current = true;
-      void window.wren.invoke("chat-view:create", {
-        sessionId: WREN_WINDOW_ID,
-        providerId: targetUrl, // reuse providerId field as URL
-        bounds,
-      });
-    } else {
-      void window.wren.invoke("chat-view:resize", {
-        sessionId: WREN_WINDOW_ID,
-        bounds,
-      });
-    }
-  }, []);
-
-  // ResizeObserver for embedded preview
-  useEffect(() => {
-    const el = previewContainerRef.current;
-    if (!el || !isOpen) return;
-
-    const observer = new ResizeObserver(() => {
-      if (!previewCreatedRef.current) return;
-      const rect = el.getBoundingClientRect();
-      const bounds = {
-        x: Math.round(rect.left),
-        y: Math.round(rect.top),
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-      };
-      if (bounds.width > 0 && bounds.height > 0) {
-        void window.wren.invoke("chat-view:resize", { sessionId: WREN_WINDOW_ID, bounds });
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isOpen]);
-
-  const handleOpen = useCallback(async () => {
+  const handleOpen = useCallback(() => {
     setError(null);
     setNetworkLog([]);
-    const trimmed = inputUrl.trim();
-    setUrl(trimmed);
+    setActiveUrl(inputUrl.trim());
     setIsOpen(true);
+  }, [inputUrl]);
 
-    if (bridgeStatus.connected) {
-      // Use Chrome bridge if available
-      try {
-        await window.wren.invoke("bridge:open-preview", {
-          wrenWindowId: WREN_WINDOW_ID,
-          url: trimmed,
-          width: 1280,
-          height: 800,
-        });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    } else {
-      // Fallback: embedded WebContentsView
-      setTimeout(() => openEmbeddedPreview(trimmed), 100);
-    }
-  }, [inputUrl, bridgeStatus.connected, openEmbeddedPreview]);
-
-  const handleClose = useCallback(async () => {
+  const handleClose = useCallback(() => {
     setIsOpen(false);
-    if (previewCreatedRef.current) {
-      previewCreatedRef.current = false;
-      void window.wren.invoke("chat-view:destroy", { sessionId: WREN_WINDOW_ID });
-    }
-    if (bridgeStatus.connected) {
-      try {
-        await window.wren.invoke("bridge:close-preview", { wrenWindowId: WREN_WINDOW_ID });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    }
-  }, [bridgeStatus.connected]);
+    setActiveUrl("");
+  }, []);
 
-  const handleNavigate = useCallback(async () => {
-    const trimmed = inputUrl.trim();
-    setUrl(trimmed);
-    if (!isOpen) return;
-
-    if (bridgeStatus.connected) {
-      try {
-        await window.wren.invoke("bridge:navigate-preview", {
-          wrenWindowId: WREN_WINDOW_ID,
-          url: trimmed,
-        });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    } else if (previewCreatedRef.current) {
-      // Destroy and recreate with new URL
-      void window.wren.invoke("chat-view:destroy", { sessionId: WREN_WINDOW_ID });
-      previewCreatedRef.current = false;
-      setTimeout(() => openEmbeddedPreview(trimmed), 100);
-    }
-  }, [inputUrl, isOpen, bridgeStatus.connected, openEmbeddedPreview]);
+  const handleNavigate = useCallback(() => {
+    setActiveUrl(inputUrl.trim());
+    setIsOpen(true);
+  }, [inputUrl]);
 
   const handleClearNetwork = useCallback(() => setNetworkLog([]), []);
 
@@ -330,8 +230,19 @@ export function PreviewPanel() {
             </div>
           )}
 
-          {/* Embedded preview — works without bridge */}
-          <div ref={previewContainerRef} className={styles.embeddedPreview} />
+          {/* Embedded preview */}
+          {isOpen ? (
+            <iframe
+              src={activeUrl}
+              className={styles.embeddedPreview}
+              title="Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+          ) : (
+            <div className={styles.emptyState}>
+              <p>Enter a URL and click <strong>▶ Open</strong></p>
+            </div>
+          )}
         </div>
       )}
 

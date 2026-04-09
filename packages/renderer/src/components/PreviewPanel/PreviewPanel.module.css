@@ -352,10 +352,11 @@
   50%       { opacity: 0.4; transform: scale(0.7); }
 }
 
-/* ── Embedded preview (WebContentsView fallback) ────────────────────────── */
+/* ── Embedded preview (iframe) ───────────────────────────────────────────── */
 .embeddedPreview {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  position: relative;
+  width: 100%;
+  border: none;
+  background: #fff;
 }
