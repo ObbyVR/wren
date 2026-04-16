@@ -75,6 +75,7 @@ const CLI_CONFIGS: Record<string, CliConfig> = {
   codex: {
     paths: [
       `${process.env.HOME}/.local/bin/codex`,
+      `${process.env.HOME}/local-node/bin/codex`,
       `${process.env.HOME}/.local/node-v22.14.0-darwin-arm64/bin/codex`,
       "/usr/local/bin/codex",
       `${process.env.HOME}/.codex/bin/codex`,
@@ -359,6 +360,7 @@ export function sendViaCli(
   const home = process.env.HOME ?? "";
   const extraPaths = [
     `${home}/.local/bin`,
+    `${home}/local-node/bin`,
     `${home}/.local/node-v22.14.0-darwin-arm64/bin`,
     "/usr/local/bin",
     `${home}/.nvm/versions/node/v22.14.0/bin`,
