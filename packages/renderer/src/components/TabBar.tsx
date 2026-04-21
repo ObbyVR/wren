@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useProjects } from "../store/projectStore";
 import { PROVIDER_META } from "../store/providerStore";
-import type { ProviderId } from "@wren/shared";
+import type { ProviderId, LicenseStatus, TierLimits } from "@wren/shared";
 import styles from "./TabBar.module.css";
 
-const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "ollama"];
+const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "mistral", "ollama"];
 
 interface ContextMenuState {
   projectId: string;
@@ -31,7 +31,20 @@ export function TabBar() {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [renaming, setRenaming] = useState<RenameState | null>(null);
   const [showProviderPicker, setShowProviderPicker] = useState<string | null>(null);
+  const [licenseLimits, setLicenseLimits] = useState<TierLimits | null>(null);
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+  const [showUpgradeHint, setShowUpgradeHint] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // Load license once; refresh on project count change so activation takes effect live
+  useEffect(() => {
+    void window.wren.invoke("license:get-limits").then(setLicenseLimits).catch(() => {});
+    void window.wren.invoke("license:get-status").then(setLicenseStatus).catch(() => {});
+  }, [projects.length]);
+
+  const maxProjects = licenseLimits?.maxProjects ?? 1;
+  const atProjectLimit = maxProjects > 0 && projects.length >= maxProjects;
+  const tierLabel = licenseStatus?.tier ?? "free";
 
   // Close context menu on outside click
   useEffect(() => {
@@ -72,8 +85,12 @@ export function TabBar() {
   }, [projects, activeProjectId, openProjectFromDisk]);
 
   const handleNewProject = useCallback(() => {
+    if (atProjectLimit) {
+      setShowUpgradeHint(true);
+      return;
+    }
     void openProjectFromDisk();
-  }, [openProjectFromDisk]);
+  }, [openProjectFromDisk, atProjectLimit]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, projectId: string) => {
@@ -166,9 +183,80 @@ export function TabBar() {
         })}
       </div>
 
-      <button className={styles.addBtn} onClick={handleNewProject} title="New project (Cmd+T)">
+      <button
+        className={styles.addBtn}
+        onClick={handleNewProject}
+        title={
+          atProjectLimit
+            ? `Free tier limit reached (${projects.length}/${maxProjects}) — upgrade to Pro for unlimited projects`
+            : "New project (Cmd+T)"
+        }
+        style={atProjectLimit ? { opacity: 0.55, cursor: "help" } : undefined}
+      >
         +
       </button>
+
+      {showUpgradeHint && (
+        <div
+          style={{
+            position: "fixed",
+            top: "48px",
+            right: "16px",
+            background: "#13131f",
+            border: "1px solid rgba(52,208,123,0.3)",
+            borderRadius: "10px",
+            padding: "14px 16px",
+            maxWidth: "320px",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+            zIndex: 200,
+            fontSize: "12px",
+            color: "#e4e4f0",
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div style={{ fontWeight: 600, marginBottom: "6px", color: "#34d07b" }}>
+            Project limit reached ({tierLabel} tier)
+          </div>
+          <div style={{ color: "#9090b0", marginBottom: "10px", lineHeight: 1.5 }}>
+            The {tierLabel} tier allows {maxProjects} project{maxProjects === 1 ? "" : "s"} at a time.
+            Close a project, or upgrade to Pro for unlimited projects.
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              style={{
+                background: "#34d07b",
+                color: "#0a0a12",
+                border: "none",
+                borderRadius: "6px",
+                padding: "6px 10px",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                setShowUpgradeHint(false);
+                window.dispatchEvent(new CustomEvent("wren:open-settings", { detail: { section: "license" } }));
+              }}
+            >
+              Open License settings
+            </button>
+            <button
+              style={{
+                background: "transparent",
+                color: "#9090b0",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "6px",
+                padding: "6px 10px",
+                fontSize: "11px",
+                cursor: "pointer",
+              }}
+              onClick={() => setShowUpgradeHint(false)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Context menu */}
       {contextMenu && (

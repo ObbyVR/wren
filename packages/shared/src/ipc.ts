@@ -231,6 +231,12 @@ export interface IpcChannelMap {
     response: { restoredCount: number };
   };
 
+  // Agentic Engine — snapshot history (durable, 30d retention)
+  "agentic:list-snapshots": {
+    request: { projectId: string };
+    response: AgenticSnapshot[];
+  };
+
   // Agentic Engine — log
   "agentic:get-log": {
     request: { projectId: string };

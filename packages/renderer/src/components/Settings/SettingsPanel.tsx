@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useProviders, PROVIDER_META } from "../../store/providerStore";
 import { useProjects } from "../../store/projectStore";
 import { useAgentic } from "../../store/agenticStore";
-import type { ProviderId, ProviderConfig, ApprovalMode, LicenseStatus, TierLimits, CredentialEntry } from "@wren/shared";
+import type { ProviderId, ProviderConfig, ApprovalMode, LicenseStatus, TierLimits, CredentialEntry, AgenticSnapshot, AuditEntry } from "@wren/shared";
 import styles from "./SettingsPanel.module.css";
 
-type Section = "providers" | "vault" | "agentic" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
+type Section = "providers" | "vault" | "agentic" | "snapshots" | "audit" | "bridge" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
 
-const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "ollama"];
+const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "mistral", "ollama"];
 
 interface Props {
   onClose: () => void;
@@ -170,6 +170,12 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
   // Telemetry state
   const [telemetryOptedIn, setTelemetryOptedIn] = useState(false);
 
+  // Snapshot history state
+  const [snapshots, setSnapshots] = useState<AgenticSnapshot[]>([]);
+
+  // Audit log state
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+
   // Vault state
   const [credentials, setCredentials] = useState<CredentialEntry[]>([]);
   const [vaultAdding, setVaultAdding] = useState(false);
@@ -322,7 +328,7 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
         {/* Sidebar */}
         <nav className={styles.sidebar}>
           <p className={styles.sidebarTitle}>Settings</p>
-          {(["providers", "vault", "agentic", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
+          {(["providers", "vault", "agentic", "snapshots", "audit", "bridge", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
             <button
               key={s}
               className={`${styles.navItem} ${section === s ? styles.navItemActive : ""}`}
@@ -563,6 +569,174 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
                 <em>Manual</em> — a dialog appears before every action.<br />
                 <em>Selective</em> — only file writes and deletes require approval; reads and list are automatic.<br />
                 <em>Auto</em> — the AI acts freely without interruptions.
+              </div>
+            </div>
+          )}
+
+          {section === "snapshots" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Snapshot History</h2>
+              <p className={styles.sectionDesc}>
+                Every agentic write/delete creates a snapshot. Pro-tier retention: 30 days.
+                Snapshots are stored locally at <code>~/Library/Application Support/Wren/wren-snapshots/</code>.
+              </p>
+              <button
+                className={styles.btnPrimary}
+                style={{ marginBottom: "1rem" }}
+                onClick={() => {
+                  if (!activeProject) return;
+                  void window.wren
+                    .invoke("agentic:list-snapshots", { projectId: activeProject.id })
+                    .then(setSnapshots)
+                    .catch(() => setSnapshots([]));
+                }}
+              >
+                {activeProject ? "Refresh" : "Open a project first"}
+              </button>
+              {snapshots.length === 0 ? (
+                <p className={styles.sectionDesc}><em>No snapshots captured yet for this project.</em></p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "420px", overflowY: "auto" }}>
+                  {[...snapshots].reverse().map((snap) => (
+                    <div
+                      key={snap.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "10px 12px",
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: "monospace",
+                        color: snap.type === "deleteFile" ? "#e05c5c" : "#34d07b",
+                        minWidth: "70px",
+                      }}>
+                        {snap.type === "deleteFile" ? "delete" : "write"}
+                      </span>
+                      <span style={{ flex: 1, fontFamily: "monospace", color: "#c0c0d0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {snap.path}
+                      </span>
+                      <span style={{ color: "#6a6a80", fontFamily: "monospace" }}>
+                        {new Date(snap.timestamp).toLocaleString()}
+                      </span>
+                      <button
+                        className={styles.btnSecondary}
+                        onClick={() => {
+                          if (!activeProject) return;
+                          void window.wren
+                            .invoke("agentic:rollbackTo", { projectId: activeProject.id, snapshotId: snap.id })
+                            .then(() => window.wren.invoke("agentic:list-snapshots", { projectId: activeProject.id }))
+                            .then(setSnapshots)
+                            .catch(() => {});
+                        }}
+                      >
+                        Rollback to here
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {section === "audit" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Audit Log</h2>
+              <p className={styles.sectionDesc}>
+                Append-only record of security-relevant events (key changes, snapshot rollbacks).
+                Stored locally at <code>~/Library/Application Support/Wren/wren-audit.log</code>.
+                Rotation at 5 MB, 90-day retention.
+              </p>
+              <button
+                className={styles.btnPrimary}
+                style={{ marginBottom: "1rem" }}
+                onClick={() => {
+                  void window.wren
+                    .invoke("audit:tail", { limit: 200 })
+                    .then(setAuditEntries)
+                    .catch(() => setAuditEntries([]));
+                }}
+              >
+                Load latest 200 entries
+              </button>
+              {auditEntries.length === 0 ? (
+                <p className={styles.sectionDesc}><em>Click the button above to load the tail.</em></p>
+              ) : (
+                <div style={{
+                  maxHeight: "480px",
+                  overflowY: "auto",
+                  fontFamily: "monospace",
+                  fontSize: "11px",
+                  background: "#08080f",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "8px",
+                  padding: "10px 12px",
+                }}>
+                  {[...auditEntries].reverse().map((e, i) => (
+                    <div key={i} style={{ display: "flex", gap: "10px", padding: "3px 0", color: "#9aa0b8" }}>
+                      <span style={{ color: "#6a6a80", minWidth: "170px" }}>{e.timestamp}</span>
+                      <span style={{ color: "#34d07b", minWidth: "160px" }}>{e.event}</span>
+                      <span style={{ flex: 1, wordBreak: "break-all" }}>
+                        {Object.entries(e)
+                          .filter(([k]) => k !== "timestamp" && k !== "event")
+                          .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+                          .join(" ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {section === "bridge" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Browser Bridge</h2>
+              <p className={styles.sectionDesc}>
+                The Browser Bridge is a companion Chrome / Firefox extension that lets Wren
+                read the DOM, click elements, and reload pages in a real browser window —
+                great for live-preview and UI-debugging loops.
+              </p>
+
+              <div style={{
+                background: "rgba(52,208,123,0.06)",
+                border: "1px solid rgba(52,208,123,0.2)",
+                borderRadius: "8px",
+                padding: "14px",
+                marginBottom: "14px",
+                fontSize: "12px",
+                color: "#c0c0d0",
+              }}>
+                <strong style={{ color: "#34d07b" }}>To install</strong>
+                <ol style={{ paddingLeft: "20px", margin: "8px 0 0" }}>
+                  <li>Download the extension zip from the <a href="https://github.com/ObbyVR/wren/releases/latest" style={{ color: "#34d07b" }}>latest GitHub release</a>.</li>
+                  <li>Open <code>chrome://extensions</code> (or <code>about:debugging</code> in Firefox).</li>
+                  <li>Enable <strong>Developer mode</strong>.</li>
+                  <li>Drop the zip onto the extensions page (or click "Load unpacked" after extracting).</li>
+                  <li>Wren will auto-connect via WebSocket on <code>ws://localhost:7331</code>.</li>
+                </ol>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <a
+                  className={styles.btnPrimary}
+                  href="https://github.com/ObbyVR/wren/releases/latest/download/wren-nexus-bridge-0.1.0.zip"
+                  style={{ textDecoration: "none" }}
+                >
+                  Download Chrome zip
+                </a>
+                <a
+                  className={styles.btnSecondary}
+                  href="https://github.com/ObbyVR/wren/releases/latest/download/wren-nexus-bridge-0.1.0-firefox.zip"
+                  style={{ textDecoration: "none" }}
+                >
+                  Download Firefox zip
+                </a>
               </div>
             </div>
           )}

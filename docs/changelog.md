@@ -19,6 +19,7 @@ First public early-access release.
   - OpenAI (GPT-4o, GPT-4o-mini, o1-mini)
   - Google Gemini (1.5 Pro, 2.0 Flash)
   - Mistral (Large, Medium, Small, Codestral)
+  - Ollama (local inference via `localhost:11434`, auto-discovery of installed models)
   - Keys stored locally via Electron `safeStorage` (OS keychain); never proxied
 
 - **Agentic Mode**
@@ -27,6 +28,7 @@ First public early-access release.
   - Automatic snapshot capture before every mutating action
   - One-click rollback (LIFO) or `rollback_to(snapshot_id)`
   - **Snapshot persistence** with 30-day retention (Pro tier advertising)
+  - Settings → Snapshots: browse + "Rollback to here" per snapshot (IPC `agentic:list-snapshots`)
 
 - **Context Bridge**
   - Switch AI provider mid-conversation without losing history
@@ -51,7 +53,13 @@ First public early-access release.
 - **Audit log**
   - Append-only JSONL at `<userData>/wren-audit.log`
   - Rotation at 5 MB, 10 archives max, 90-day retention
-  - Tail API (`audit:tail` IPC channel) for in-app log viewer
+  - Tail API (`audit:tail` IPC channel) wired into Settings → Audit tail-200 viewer
+
+- **License gating**
+  - Free-tier project cap enforced on the TabBar `+` button with an inline upgrade hint that deep-links to Settings → License via the `wren:open-settings` window event
+
+- **Browser Bridge install flow**
+  - Settings → Bridge: install instructions + direct Chrome / Firefox download buttons pointing at the release assets
 
 - **Auto-update**
   - `electron-updater` wired for generic provider; set `WREN_UPDATE_URL` to enable

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { auditLog } from "./audit-log";
 
-export type ProviderId = "claude" | "openai" | "gemini" | "mistral";
+export type ProviderId = "claude" | "openai" | "gemini" | "mistral" | "ollama";
 
 const KEYS_FILE = path.join(app.getPath("userData"), "wren-keys.json");
 

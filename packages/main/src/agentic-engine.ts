@@ -112,6 +112,12 @@ class AgenticEngine {
     state.snapshotStack.push(...persisted);
   }
 
+  /** Return the ordered snapshot history for a project (oldest → newest). */
+  async listSnapshots(projectId: string): Promise<AgenticSnapshot[]> {
+    await this.loadPersistedSnapshots(projectId);
+    return [...this.getState(projectId).snapshotStack];
+  }
+
   /** Scheduled maintenance — prune >30d snapshots across all projects. */
   async prune(): Promise<number> {
     return pruneOldSnapshots();

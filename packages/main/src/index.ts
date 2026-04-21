@@ -216,6 +216,10 @@ function registerHandlers(): void {
     return agenticEngine.rollback(projectId);
   });
 
+  handle("agentic:list-snapshots", (_event, { projectId }) => {
+    return agenticEngine.listSnapshots(projectId);
+  });
+
   handle("agentic:rollbackTo", (_event, { projectId, snapshotId }) => {
     return agenticEngine.rollbackTo(projectId, snapshotId);
   });

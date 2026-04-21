@@ -178,6 +178,13 @@ function AppInner() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
+  // Programmatic open-settings event (used by TabBar upgrade prompt, etc.)
+  useEffect(() => {
+    const handler = () => setShowSettings(true);
+    window.addEventListener("wren:open-settings", handler);
+    return () => window.removeEventListener("wren:open-settings", handler);
+  }, []);
+
   // Auto-open Preview when AI response mentions a localhost URL
   useEffect(() => {
     const handler = (e: Event) => {
