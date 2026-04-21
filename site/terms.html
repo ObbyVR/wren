@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terms of Use — Wren IDE</title>
+<meta name="description" content="Terms of use for the Wren IDE desktop application." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a12;
+    --bg-2: #0e0e1a;
+    --text: #e4e4f0;
+    --text-muted: #8888a8;
+    --text-dim: #4a4a6a;
+    --accent: #34D07B;
+    --border: rgba(255,255,255,0.07);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: Geist, system-ui, sans-serif; font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 80px 24px 120px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 48px; }
+  .badge { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(52,208,123,0.1); color: var(--accent); border: 1px solid rgba(52,208,123,0.25); margin-bottom: 16px; }
+  h1 { font-size: 40px; line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 48px 0 12px; letter-spacing: -0.01em; }
+  p { color: var(--text-muted); margin: 12px 0; }
+  p strong { color: var(--text); }
+  ul { color: var(--text-muted); padding-left: 20px; }
+  ul li { margin: 6px 0; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); background: rgba(52,208,123,0.06); padding: 1px 6px; border-radius: 4px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .meta { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  footer { margin-top: 80px; border-top: 1px solid var(--border); padding-top: 24px; color: var(--text-dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">Terms</div>
+    <h1>Terms of Use</h1>
+    <p class="meta">Effective 2026-04-22 · Wren IDE v0.1.x (early access)</p>
+  </header>
+
+  <p>By installing or using Wren, you agree to these terms. If you do not agree, do not use the software.</p>
+
+  <h2>1. The software</h2>
+  <p>Wren is a desktop IDE published as an early-access product. It ships on an "as is" basis: features may change, regressions may occur, and data formats may evolve across versions. Back up anything you cannot afford to lose.</p>
+
+  <h2>2. License to use</h2>
+  <p>You are granted a personal, non-exclusive, non-transferable right to install and run Wren on devices you own or control, subject to the tier you have activated (Free, Pro, Team). You may not redistribute, resell, or sub-license the binaries. Source is not currently published; reverse engineering is permitted only where local law makes the contrary unenforceable (e.g. EU Directive 2009/24/EC, Art. 6).</p>
+
+  <h2>3. Bring Your Own Keys</h2>
+  <p>Wren talks to third-party AI providers using API keys you supply. You are responsible for each provider's pricing, usage limits, and terms of service. Wren does not bill for model inference and does not add any markup.</p>
+
+  <h2>4. Acceptable use</h2>
+  <ul>
+    <li>No using Wren to target individuals, perform cyber-attacks, or generate content that violates applicable law (each provider also enforces its own policies).</li>
+    <li>No attempting to extract or redistribute embedded provider credentials or licence-verification material.</li>
+    <li>No operating Wren as a hosted multi-tenant service for third parties without a written Team / Enterprise agreement.</li>
+  </ul>
+
+  <h2>5. Subscription plans</h2>
+  <ul>
+    <li><strong>Free</strong> — 1 project, BYOK, agentic mode capped at 5 runs/day, Browser Bridge. No payment required.</li>
+    <li><strong>Pro (€15/mo)</strong> — unlimited projects, unlimited agentic runs, 30-day snapshot retention, Context Bridge, Browser Bridge.</li>
+    <li><strong>Team (€30/user/mo)</strong> — everything in Pro plus shared workspaces, team key management, audit log review, priority support; SSO / SAML when available.</li>
+  </ul>
+  <p>Subscriptions renew monthly. Cancel anytime inside Settings → License; the paid tier remains active until the end of the period. EU consumers retain the 14-day right of withdrawal under Directive 2011/83/EU; this right is waived only once you have used a paid feature that requires activation.</p>
+
+  <h2>6. Updates</h2>
+  <p>Wren may publish updates automatically. You can disable auto-update; you will then be responsible for installing security-relevant versions manually.</p>
+
+  <h2>7. Disclaimer</h2>
+  <p>Wren is provided <strong>without warranties</strong> of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement. The agentic mode can read, write, delete files, and execute commands in the projects you point it at; <strong>you are responsible for the actions it performs on your behalf</strong>. Keep version control in place and review snapshots.</p>
+
+  <h2>8. Liability</h2>
+  <p>To the extent permitted by law, Wren's maximum aggregate liability for any claim arising out of or related to the software is limited to the amount you paid for Wren in the 12 months preceding the claim. Wren is not liable for indirect, incidental, consequential, or lost-profit damages.</p>
+
+  <h2>9. Termination</h2>
+  <p>These terms apply until you uninstall Wren. We may suspend or terminate access for breach of Section 4 on written notice.</p>
+
+  <h2>10. Governing law</h2>
+  <p>Unless a separate Team / Enterprise contract states otherwise, these terms are governed by the laws of Italy. Disputes go to the courts competent for the consumer's habitual residence when mandatory; otherwise to the courts of Milan.</p>
+
+  <h2>11. Contact</h2>
+  <p>Questions or legal notices: <a href="mailto:legal@wren.dev">legal@wren.dev</a>.</p>
+
+  <footer>
+    © 2026 Wren IDE · <a href="./index.html">Home</a> · <a href="./privacy.html">Privacy</a>
+  </footer>
+</div>
+</body>
+</html>

@@ -14,6 +14,7 @@ const TOKEN_COST_PER_MILLION: Record<ProviderId, { input: number; output: number
   openai: { input: 2.5, output: 10.0 },
   gemini: { input: 1.25, output: 5.0 },
   ollama: { input: 0, output: 0 },
+  mistral: { input: 2.0, output: 6.0 },
 };
 
 export function estimateCost(

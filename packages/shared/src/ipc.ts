@@ -470,6 +470,19 @@ export interface IpcChannelMap {
     request: void;
     response: BridgeWindowInfo[];
   };
+
+  // Audit log (Team tier — always readable locally)
+  "audit:tail": {
+    request: { limit?: number };
+    response: AuditEntry[];
+  };
+}
+
+/** Append-only audit log entry persisted at <userData>/wren-audit.log (JSONL) */
+export interface AuditEntry {
+  timestamp: string;
+  event: string;
+  [k: string]: unknown;
 }
 
 export type IpcRequest<C extends IpcChannel> = IpcChannelMap[C]["request"];
@@ -547,7 +560,7 @@ export interface AiStreamToolResultEvent {
 
 // ── Multi-provider types ──────────────────────────────────────────────────────
 
-export type ProviderId = "anthropic" | "openai" | "gemini" | "ollama";
+export type ProviderId = "anthropic" | "openai" | "gemini" | "ollama" | "mistral";
 
 /** How a chat session connects to the AI provider */
 export type ChatSessionMode = "subscription" | "api" | "browser";

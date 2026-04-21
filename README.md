@@ -34,10 +34,12 @@ Wren is a desktop IDE built on a single principle: **you own your AI stack**.
 
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | [Wren-mac-arm64.dmg](#) |
-| macOS (Intel) | [Wren-mac-x64.dmg](#) |
-| Windows | [Wren-Setup-win-x64.exe](#) |
-| Linux | [Wren-linux-x64.AppImage](#) |
+| macOS (Apple Silicon) | [Wren-0.1.0-arm64-mac.zip](https://github.com/ObbyVR/wren/releases/latest/download/Wren-0.1.0-arm64-mac.zip) |
+| macOS (Intel) | [Wren-0.1.0-mac.zip](https://github.com/ObbyVR/wren/releases/latest/download/Wren-0.1.0-mac.zip) |
+| Windows (x64, portable) | [Wren-0.1.0-win.zip](https://github.com/ObbyVR/wren/releases/latest/download/Wren-0.1.0-win.zip) |
+| Linux (x64) | [Wren-0.1.0.AppImage](https://github.com/ObbyVR/wren/releases/latest/download/Wren-0.1.0.AppImage) |
+
+Browser Bridge extension: [Chrome](https://github.com/ObbyVR/wren/releases/latest/download/wren-nexus-bridge-0.1.0.zip) · [Firefox](https://github.com/ObbyVR/wren/releases/latest/download/wren-nexus-bridge-0.1.0-firefox.zip)
 
 ### Build from Source
 
@@ -84,10 +86,10 @@ Wren never stores your keys on our servers. Keys are stored locally, encrypted.
 
 | Provider | Models | Get API Key |
 |----------|--------|-------------|
-| Anthropic | Claude 3.5 Sonnet, Claude 3 Opus, Haiku | [console.anthropic.com](https://console.anthropic.com) |
-| OpenAI | GPT-4o, GPT-4 Turbo, GPT-3.5 | [platform.openai.com](https://platform.openai.com) |
-| Google | Gemini 1.5 Pro, Gemini Flash | [aistudio.google.com](https://aistudio.google.com) |
-| Mistral | Mistral Large, Medium, Small | [console.mistral.ai](https://console.mistral.ai) |
+| Anthropic | Claude Sonnet 4.6, Opus, Haiku | [console.anthropic.com](https://console.anthropic.com) |
+| OpenAI | GPT-4o, GPT-4o-mini, o1-mini | [platform.openai.com](https://platform.openai.com) |
+| Google | Gemini 2.0 Flash, 1.5 Pro | [aistudio.google.com](https://aistudio.google.com) |
+| Mistral | Large, Medium, Small, Codestral | [console.mistral.ai](https://console.mistral.ai) |
 
 ### How to Add a Key
 
@@ -104,8 +106,11 @@ Wren never stores your keys on our servers. Keys are stored locally, encrypted.
 ## Documentation
 
 - [Getting Started Guide](docs/getting-started.md) — First project in 5 minutes
+- [API Reference](docs/api-reference.md) — Typed IPC channels
+- [Changelog](docs/changelog.md) — What shipped when
+- [Roadmap](docs/roadmap.md) — What's next
 - [FAQ](docs/faq.md) — Top questions answered
-- [Discord Community](#community) — Ask anything
+- [Privacy](site/privacy.html) · [Terms](site/terms.html)
 
 ---
 

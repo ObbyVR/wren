@@ -1,8 +1,9 @@
 import { app, safeStorage } from "electron";
 import fs from "fs";
 import path from "path";
+import { auditLog } from "./audit-log";
 
-export type ProviderId = "claude" | "openai" | "gemini";
+export type ProviderId = "claude" | "openai" | "gemini" | "mistral";
 
 const KEYS_FILE = path.join(app.getPath("userData"), "wren-keys.json");
 
@@ -44,6 +45,7 @@ export function setKey(provider: ProviderId, plaintext: string, alias = "default
   if (!keys[provider]) keys[provider] = {};
   keys[provider]![alias] = encrypted.toString("base64");
   writeKeysFile(keys);
+  auditLog({ event: "key.set", provider, alias });
 }
 
 export function removeKey(provider: ProviderId, alias = "default"): void {
@@ -55,6 +57,7 @@ export function removeKey(provider: ProviderId, alias = "default"): void {
     }
   }
   writeKeysFile(keys);
+  auditLog({ event: "key.remove", provider, alias });
 }
 
 export function hasKey(provider: ProviderId, alias = "default"): boolean {

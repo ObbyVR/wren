@@ -17,6 +17,8 @@ import type {
   AiToolResult,
 } from "@wren/shared";
 import type { AIProvider, ProviderChunk } from "@wren/ai";
+import { persistSnapshot, deleteSnapshot, loadSnapshots, pruneOldSnapshots } from "./snapshot-store";
+import { auditLog } from "./audit-log";
 
 const execFileAsync = promisify(execFile);
 
@@ -95,7 +97,24 @@ class AgenticEngine {
       timestamp: Date.now(),
     };
     state.snapshotStack.push(snapshot);
+    // Fire-and-forget durable persistence (30d retention handled by snapshot-store)
+    persistSnapshot(projectId, snapshot).catch(() => {
+      // disk full / permission error — snapshot still valid in-memory
+    });
     return snapshot.id;
+  }
+
+  /** Hydrate in-memory stack from disk on first access per project. */
+  async loadPersistedSnapshots(projectId: string): Promise<void> {
+    const state = this.getState(projectId);
+    if (state.snapshotStack.length > 0) return; // already populated
+    const persisted = await loadSnapshots(projectId);
+    state.snapshotStack.push(...persisted);
+  }
+
+  /** Scheduled maintenance — prune >30d snapshots across all projects. */
+  async prune(): Promise<number> {
+    return pruneOldSnapshots();
   }
 
   private async applySnapshot(snapshot: AgenticSnapshot): Promise<void> {
@@ -275,6 +294,13 @@ class AgenticEngine {
     const snapshot = state.snapshotStack.pop();
     if (!snapshot) throw new Error("No snapshot available to rollback");
     await this.applySnapshot(snapshot);
+    await deleteSnapshot(projectId, snapshot.id);
+    auditLog({
+      event: "snapshot.rollback",
+      projectId,
+      snapshotId: snapshot.id,
+      path: snapshot.path,
+    });
     this.logAction(projectId, {
       type: "rollback" as AgenticActionType,
       path: snapshot.path,
@@ -295,7 +321,14 @@ class AgenticEngine {
     const toRestore = state.snapshotStack.splice(idx);
     for (const snapshot of toRestore.reverse()) {
       await this.applySnapshot(snapshot);
+      await deleteSnapshot(projectId, snapshot.id);
     }
+    auditLog({
+      event: "snapshot.rollbackTo",
+      projectId,
+      snapshotId,
+      restoredCount: toRestore.length,
+    });
     this.logAction(projectId, {
       type: "rollback" as AgenticActionType,
       snapshotId,

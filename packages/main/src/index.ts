@@ -13,6 +13,7 @@ import { registerLicenseHandlers } from "./license-handlers";
 import { registerTelemetryHandlers } from "./telemetry-handlers";
 import { ChatViewManager } from "./chat-view-manager";
 import { startLocalFileServer, getLocalFileServerPort } from "./local-file-server";
+import { readAuditTail } from "./audit-log";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty: typeof import("node-pty") = require("node-pty");
@@ -320,6 +321,11 @@ function registerHandlers(): void {
 
   handle("bridge:reload-preview", (_event, { wrenWindowId }) => {
     bridgeManager.reloadPreview(wrenWindowId);
+  });
+
+  // Audit log tail (Team tier feature — always readable locally)
+  handle("audit:tail", (_event, payload) => {
+    return readAuditTail(payload?.limit ?? 200);
   });
 }
 

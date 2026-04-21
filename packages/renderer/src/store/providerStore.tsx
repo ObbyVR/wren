@@ -33,6 +33,11 @@ export const PROVIDER_META: Record<
     color: "#9b59b6",
     defaultModel: "llama3",
   },
+  mistral: {
+    name: "Mistral",
+    color: "#ff7000",
+    defaultModel: "mistral-large-latest",
+  },
 };
 
 const STORAGE_KEY = "wren:providers";

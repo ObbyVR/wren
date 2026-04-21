@@ -36,6 +36,8 @@ mac:
   target:
     - target: dmg
       arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
   # Code signing — set these env vars in CI:
   #   CSC_LINK        — path or base64 of .p12 certificate
   #   CSC_KEY_PASSWORD — password for the .p12
@@ -53,12 +55,16 @@ dmg:
 win:
   icon: build/icon.ico
   target:
+    - target: zip
+      arch: [x64]
     - target: nsis
       arch: [x64]
   # Code signing — set these env vars in CI:
   #   WIN_CSC_LINK        — path or base64 of .pfx certificate
   #   WIN_CSC_KEY_PASSWORD — password for the .pfx
   certificateSubjectName: Wren
+  # Disable asar integrity patching on non-Windows hosts (requires wine/prlctl)
+  signAndEditExecutable: false
 
 nsis:
   oneClick: false
@@ -77,3 +83,4 @@ linux:
       arch: [x64]
   category: Development
   synopsis: BYOK-first multi-provider AI IDE
+  maintainer: Wren IDE <hello@wren.dev>

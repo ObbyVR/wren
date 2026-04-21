@@ -4,6 +4,10 @@
   "private": true,
   "main": "packages/main/dist/bundle.js",
   "description": "Wren IDE — BYOK-first, multi-provider AI, multi-project desktop IDE",
+  "author": {
+    "name": "Wren IDE",
+    "email": "hello@wren.dev"
+  },
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @wren/shared build && pnpm --filter @wren/ai build && pnpm --filter @wren/license build && pnpm --filter @wren/preload build && pnpm --filter @wren/main build && node scripts/build-main.mjs && pnpm --filter @wren/renderer build",

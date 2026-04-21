@@ -1,5 +1,5 @@
 import { type BrowserWindow, type IpcMainInvokeEvent } from "electron";
-import { ClaudeProvider, GeminiProvider, OpenAIProvider, transferContext } from "@wren/ai";
+import { ClaudeProvider, GeminiProvider, MistralProvider, OpenAIProvider, transferContext } from "@wren/ai";
 import type { AIProvider } from "@wren/ai";
 import type { IpcChannelMap } from "@wren/shared";
 import {
@@ -56,6 +56,7 @@ const PROVIDER_NAMES: Record<ProviderId, string> = {
   claude: "Anthropic Claude",
   openai: "OpenAI",
   gemini: "Google Gemini",
+  mistral: "Mistral",
 };
 
 function buildProvider(providerId: ProviderId, key: string): AIProvider {
@@ -64,6 +65,8 @@ function buildProvider(providerId: ProviderId, key: string): AIProvider {
       return new OpenAIProvider(key);
     case "gemini":
       return new GeminiProvider(key);
+    case "mistral":
+      return new MistralProvider(key);
     case "claude":
     default:
       return new ClaudeProvider(key);

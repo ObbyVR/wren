@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — Wren IDE</title>
+<meta name="description" content="How Wren IDE handles your data. Short answer: it doesn't." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a12;
+    --bg-2: #0e0e1a;
+    --text: #e4e4f0;
+    --text-muted: #8888a8;
+    --text-dim: #4a4a6a;
+    --accent: #34D07B;
+    --border: rgba(255,255,255,0.07);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Geist, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 80px 24px 120px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 48px; }
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(52,208,123,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(52,208,123,0.25);
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 40px; line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 48px 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 16px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 32px 0 8px; }
+  p { color: var(--text-muted); margin: 12px 0; }
+  p strong, li strong { color: var(--text); }
+  ul { color: var(--text-muted); padding-left: 20px; }
+  ul li { margin: 6px 0; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); background: rgba(52,208,123,0.06); padding: 1px 6px; border-radius: 4px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .meta { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  footer { margin-top: 80px; border-top: 1px solid var(--border); padding-top: 24px; color: var(--text-dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">Privacy</div>
+    <h1>Privacy Policy</h1>
+    <p class="meta">Effective 2026-04-22 · Wren IDE v0.1.x</p>
+  </header>
+
+  <p>Wren is a desktop application that runs locally on your machine. This policy describes the narrow set of data Wren handles and what leaves your device.</p>
+
+  <h2>1. Short version</h2>
+  <ul>
+    <li><strong>Your code never touches our servers.</strong> Wren does not have servers that receive your project files.</li>
+    <li><strong>Your API keys stay on your device.</strong> They are encrypted via the OS keychain and stored at <code>&lt;userData&gt;/wren-keys.json</code>.</li>
+    <li><strong>Provider calls go directly from your machine</strong> to Anthropic, OpenAI, Google, or Mistral. Wren is not a proxy.</li>
+    <li><strong>Telemetry is off by default.</strong> No automatic metrics, no crash reports, no behavioural analytics unless you opt in under Settings → Telemetry.</li>
+  </ul>
+
+  <h2>2. Data Wren stores locally</h2>
+  <ul>
+    <li><code>wren-keys.json</code> — encrypted provider API keys</li>
+    <li><code>wren-keys-meta.json</code> — non-secret key metadata (label, createdAt, lastUsedAt)</li>
+    <li><code>wren-snapshots/</code> — per-project agentic snapshots (retained 30 days, auto-pruned)</li>
+    <li><code>wren-audit.log</code> — append-only audit events (key set/remove, snapshot rollback). Rotates at 5 MB, 90-day retention.</li>
+    <li>Project configuration and recent-file lists, in the Electron user-data directory</li>
+  </ul>
+  <p>All of the above live under the OS-managed Electron <code>userData</code> folder. Wren never uploads any of it.</p>
+
+  <h2>3. When data leaves your machine</h2>
+  <p>Data leaves your device only when you explicitly invoke an AI action. In that case, the active provider's SDK sends the request directly to:</p>
+  <ul>
+    <li><code>api.anthropic.com</code> (Anthropic)</li>
+    <li><code>api.openai.com</code> (OpenAI)</li>
+    <li><code>generativelanguage.googleapis.com</code> (Google)</li>
+    <li><code>api.mistral.ai</code> (Mistral)</li>
+    <li>The local Claude Code or OpenAI Codex CLI if you use subscription mode (still local except for the provider call those CLIs make)</li>
+  </ul>
+  <p>Wren receives the streamed response and renders it. No copy is kept on any Wren-owned server.</p>
+
+  <h2>4. Telemetry (opt-in)</h2>
+  <p>If you opt in under Settings → Telemetry, Wren sends anonymous event counts (commands invoked, errors encountered) to help prioritise roadmap items. It never includes prompts, code, or keys. You can revoke consent at any time; the setting takes effect immediately and nothing is batched.</p>
+
+  <h2>5. Browser Bridge extension</h2>
+  <p>The optional Chrome / Firefox extension connects to a local WebSocket server started by Wren. All traffic stays on your machine (<code>localhost</code>). The extension reads DOM from pages you explicitly open in the bridged window and never sends that data anywhere except the Wren desktop app running on the same device.</p>
+
+  <h2>6. Auto-update</h2>
+  <p>When <code>WREN_UPDATE_URL</code> is configured, Wren periodically checks that URL for a new version manifest. No user identifier is attached. You can disable auto-update in Settings.</p>
+
+  <h2>7. Licensing</h2>
+  <p>License validation is offline. A Pro or Team key carries its tier and expiry signed at issuance time; Wren verifies locally. No license server pings occur.</p>
+
+  <h2>8. Your rights</h2>
+  <p>Because Wren does not collect personal data on its own infrastructure, the usual GDPR/CCPA access and erasure requests resolve to: delete the app and wipe the Electron user-data folder. If you believe a Wren component is sending data we have not disclosed, email <a href="mailto:privacy@wren.dev">privacy@wren.dev</a> and we will investigate.</p>
+
+  <h2>9. Changes to this policy</h2>
+  <p>Material changes are announced in the changelog and on the website. The effective date at the top of this page reflects the last update.</p>
+
+  <footer>
+    © 2026 Wren IDE · <a href="./index.html">Home</a> · <a href="./terms.html">Terms</a>
+  </footer>
+</div>
+</body>
+</html>
