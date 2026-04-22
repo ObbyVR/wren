@@ -482,6 +482,12 @@ export interface IpcChannelMap {
     request: { limit?: number };
     response: AuditEntry[];
   };
+
+  // System — open a file picker for .env imports
+  "dialog:open-env-file": {
+    request: void;
+    response: { path: string; content: string; error?: string } | null;
+  };
 }
 
 /** Append-only audit log entry persisted at <userData>/wren-audit.log (JSONL) */

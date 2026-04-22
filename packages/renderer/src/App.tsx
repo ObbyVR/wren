@@ -17,6 +17,7 @@ import { ProjectProvider, useProjects } from "./store/projectStore";
 import { ProviderProvider } from "./store/providerStore";
 import { CostProvider } from "./store/costStore";
 import { AgenticProvider, useAgentic } from "./store/agenticStore";
+import { PromptLibraryProvider } from "./store/promptLibraryStore";
 import styles from "./App.module.css";
 import type { ProjectTab } from "@wren/shared";
 
@@ -301,7 +302,9 @@ export default function App() {
       <ProviderProvider>
         <CostProvider>
           <AgenticProvider>
-            <AppInner />
+            <PromptLibraryProvider>
+              <AppInner />
+            </PromptLibraryProvider>
           </AgenticProvider>
         </CostProvider>
       </ProviderProvider>

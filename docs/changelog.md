@@ -61,6 +61,15 @@ First public early-access release.
 - **Browser Bridge install flow**
   - Settings → Bridge: install instructions + direct Chrome / Firefox download buttons pointing at the release assets
 
+- **`.env` import**
+  - Settings → Providers → "Import from .env file…" parses the file, detects `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY` (plus common aliases) and bulk-stores them in the vault with validation
+
+- **Prompt library**
+  - Settings → Prompts: reusable snippets with title + body, scoped global or per-project, with copy / edit / delete; persisted in localStorage
+
+- **Cost dashboard**
+  - Retention extended to 90 days (was 30); All-time view label updated
+
 - **Auto-update**
   - `electron-updater` wired for generic provider; set `WREN_UPDATE_URL` to enable
 

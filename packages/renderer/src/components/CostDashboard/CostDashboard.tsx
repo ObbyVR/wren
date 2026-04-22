@@ -80,7 +80,7 @@ export function CostDashboard({ onClose }: Props) {
               className={`${styles.toggleBtn} ${view === "all" ? styles.toggleActive : ""}`}
               onClick={() => setView("all")}
             >
-              All (30d)
+              All (90d)
             </button>
           </div>
           <button className={styles.resetBtn} onClick={resetToday} title="Reset today's counters">

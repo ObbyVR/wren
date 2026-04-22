@@ -32,14 +32,16 @@ function today(): string {
 
 const STORAGE_KEY = "wren:cost";
 
+const RETENTION_DAYS = 90;
+
 function loadEntries(): CostEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as CostEntry[];
-      // Discard entries older than 30 days
+      // Discard entries older than retention window
       const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 30);
+      cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
       return parsed.filter((e) => new Date(e.date) >= cutoff);
     }
   } catch { /* ignore */ }

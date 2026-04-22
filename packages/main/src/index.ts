@@ -189,6 +189,23 @@ function registerHandlers(): void {
     return result.canceled ? null : (result.filePaths[0] ?? null);
   });
 
+  handle("dialog:open-env-file", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [
+        { name: "Env files", extensions: ["env", "envrc", "local", "txt"] },
+        { name: "All files", extensions: ["*"] },
+      ],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    try {
+      const content = await fs.readFile(result.filePaths[0], "utf-8");
+      return { path: result.filePaths[0], content };
+    } catch (err) {
+      return { path: result.filePaths[0], content: "", error: String(err) };
+    }
+  });
+
   // Agentic Engine handlers
   handle("agentic:readFile", (_event, { projectId, path: filePath }) => {
     return agenticEngine.readFile(projectId, filePath);

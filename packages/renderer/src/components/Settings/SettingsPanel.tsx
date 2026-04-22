@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useProviders, PROVIDER_META } from "../../store/providerStore";
 import { useProjects } from "../../store/projectStore";
 import { useAgentic } from "../../store/agenticStore";
+import { usePromptLibrary } from "../../store/promptLibraryStore";
 import type { ProviderId, ProviderConfig, ApprovalMode, LicenseStatus, TierLimits, CredentialEntry, AgenticSnapshot, AuditEntry } from "@wren/shared";
 import styles from "./SettingsPanel.module.css";
 
-type Section = "providers" | "vault" | "agentic" | "snapshots" | "audit" | "bridge" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
+type Section = "providers" | "vault" | "agentic" | "snapshots" | "audit" | "bridge" | "prompts" | "license" | "telemetry" | "appearance" | "shortcuts" | "about" | "help";
 
 const PROVIDERS: ProviderId[] = ["anthropic", "openai", "gemini", "mistral", "ollama"];
 
@@ -160,6 +161,11 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
     useProviders();
   const { projects, activeProject, setProjectProvider } = useProjects();
   const { settings, updateSettings } = useAgentic();
+  const { snippets, addSnippet, updateSnippet, deleteSnippet } = usePromptLibrary();
+  const [promptDraftTitle, setPromptDraftTitle] = useState("");
+  const [promptDraftBody, setPromptDraftBody] = useState("");
+  const [promptDraftGlobal, setPromptDraftGlobal] = useState(true);
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
 
   // License state
   const [licenseKey, setLicenseKey] = useState("");
@@ -301,6 +307,72 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
     refreshCredentials();
   }, [refreshCredentials]);
 
+  // ── .env import ────────────────────────────────────────────────────────────
+  const [envImportReport, setEnvImportReport] = useState<string | null>(null);
+
+  const handleEnvImport = useCallback(async () => {
+    setEnvImportReport(null);
+    const res = await window.wren.invoke("dialog:open-env-file");
+    if (!res) return; // cancelled
+    if (res.error) {
+      setEnvImportReport(`Error reading file: ${res.error}`);
+      return;
+    }
+
+    // Map env var name → providerId (and alias if "_<LABEL>" suffix)
+    const ENV_MAP: Record<string, ProviderId> = {
+      ANTHROPIC_API_KEY: "anthropic",
+      CLAUDE_API_KEY: "anthropic",
+      OPENAI_API_KEY: "openai",
+      OPENAI_KEY: "openai",
+      GEMINI_API_KEY: "gemini",
+      GOOGLE_API_KEY: "gemini",
+      GOOGLE_GENERATIVE_AI_API_KEY: "gemini",
+      MISTRAL_API_KEY: "mistral",
+      MISTRAL_KEY: "mistral",
+    };
+
+    const found: Array<{ name: string; providerId: ProviderId; value: string }> = [];
+    for (const rawLine of res.content.split("\n")) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const m = /^(?:export\s+)?([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
+      if (!m) continue;
+      const [, name, rawValue] = m;
+      if (!ENV_MAP[name]) continue;
+      const value = rawValue.replace(/^['"]|['"]$/g, "").trim();
+      if (!value) continue;
+      found.push({ name, providerId: ENV_MAP[name], value });
+    }
+
+    if (found.length === 0) {
+      setEnvImportReport("No recognised API keys found. Expected one of: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY.");
+      return;
+    }
+
+    let imported = 0;
+    let failed = 0;
+    for (const entry of found) {
+      try {
+        const result = await window.wren.invoke("credentials:set", {
+          providerId: entry.providerId,
+          alias: "default",
+          key: entry.value,
+          label: `imported from ${res.path.split("/").pop() ?? ".env"}`,
+        });
+        if (result.valid) imported++;
+        else failed++;
+      } catch {
+        failed++;
+      }
+    }
+    refreshCredentials();
+    setEnvImportReport(
+      `Imported ${imported}/${found.length} key${found.length === 1 ? "" : "s"}` +
+      (failed > 0 ? ` (${failed} failed validation)` : "")
+    );
+  }, [refreshCredentials]);
+
   const handleTest = useCallback(
     async (id: ProviderId) => {
       const config = getProvider(id);
@@ -328,7 +400,7 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
         {/* Sidebar */}
         <nav className={styles.sidebar}>
           <p className={styles.sidebarTitle}>Settings</p>
-          {(["providers", "vault", "agentic", "snapshots", "audit", "bridge", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
+          {(["providers", "vault", "agentic", "snapshots", "audit", "bridge", "prompts", "license", "telemetry", "appearance", "shortcuts", "about", "help"] as Section[]).map((s) => (
             <button
               key={s}
               className={`${styles.navItem} ${section === s ? styles.navItemActive : ""}`}
@@ -351,6 +423,20 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
               <p className={styles.sectionDesc}>
                 Manage API keys for each AI provider. Keys are stored encrypted in your OS keychain.
               </p>
+
+              <div style={{ marginBottom: "14px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <button className={styles.btnSecondary} onClick={handleEnvImport}>
+                  Import from .env file…
+                </button>
+                <span style={{ color: "#7a7a92", fontSize: "11px" }}>
+                  Auto-detects ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY
+                </span>
+              </div>
+              {envImportReport && (
+                <div style={{ marginBottom: "14px", padding: "10px 12px", borderRadius: "8px", background: "rgba(52,208,123,0.08)", border: "1px solid rgba(52,208,123,0.25)", color: "#c0c0d0", fontSize: "12px" }}>
+                  {envImportReport}
+                </div>
+              )}
 
               <div className={styles.providerList}>
                 {PROVIDERS.map((pid) => (
@@ -687,6 +773,162 @@ export function SettingsPanel({ onClose, onTriggerOnboarding }: Props) {
                           .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
                           .join(" ")}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {section === "prompts" && (
+            <div>
+              <h2 className={styles.sectionTitle}>Prompt Library</h2>
+              <p className={styles.sectionDesc}>
+                Save reusable prompts — system instructions, rubrics, templates.
+                Global prompts appear in every project; project-scoped ones only in the active one.
+              </p>
+
+              <div style={{ border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "14px", marginBottom: "18px", background: "rgba(255,255,255,0.02)" }}>
+                <div className={styles.formRow}>
+                  <label className={styles.formLabel}>Title</label>
+                  <input
+                    className={styles.formInput}
+                    value={promptDraftTitle}
+                    onChange={(e) => setPromptDraftTitle(e.target.value)}
+                    placeholder="e.g. Strict code review"
+                  />
+                </div>
+                <div className={styles.formRow}>
+                  <label className={styles.formLabel}>Prompt</label>
+                  <textarea
+                    className={styles.formInput}
+                    rows={5}
+                    value={promptDraftBody}
+                    onChange={(e) => setPromptDraftBody(e.target.value)}
+                    placeholder="Write the reusable prompt body…"
+                    style={{ fontFamily: "monospace", fontSize: "12px", resize: "vertical" }}
+                  />
+                </div>
+                <div className={styles.formRow}>
+                  <label className={styles.formLabel}>Scope</label>
+                  <label className={styles.toggle}>
+                    <input
+                      type="checkbox"
+                      checked={promptDraftGlobal}
+                      onChange={(e) => setPromptDraftGlobal(e.target.checked)}
+                    />
+                    <span className={styles.toggleSlider} />
+                    <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#9090b0" }}>
+                      {promptDraftGlobal
+                        ? "Global — available everywhere"
+                        : activeProject
+                          ? `Only for ${activeProject.name}`
+                          : "Open a project first to scope"}
+                    </span>
+                  </label>
+                </div>
+                <button
+                  className={styles.btnPrimary}
+                  disabled={!promptDraftTitle.trim() || !promptDraftBody.trim()}
+                  onClick={() => {
+                    if (editingPromptId) {
+                      updateSnippet(editingPromptId, {
+                        title: promptDraftTitle.trim(),
+                        body: promptDraftBody,
+                        projectId: promptDraftGlobal ? undefined : activeProject?.id,
+                      });
+                    } else {
+                      addSnippet({
+                        title: promptDraftTitle.trim(),
+                        body: promptDraftBody,
+                        projectId: promptDraftGlobal ? undefined : activeProject?.id,
+                      });
+                    }
+                    setPromptDraftTitle("");
+                    setPromptDraftBody("");
+                    setEditingPromptId(null);
+                  }}
+                >
+                  {editingPromptId ? "Update" : "Save prompt"}
+                </button>
+                {editingPromptId && (
+                  <button
+                    className={styles.btnSecondary}
+                    style={{ marginLeft: "8px" }}
+                    onClick={() => {
+                      setEditingPromptId(null);
+                      setPromptDraftTitle("");
+                      setPromptDraftBody("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              {snippets.length === 0 ? (
+                <p className={styles.sectionDesc}><em>No prompts saved yet.</em></p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {snippets.map((s) => (
+                    <div
+                      key={s.id}
+                      style={{
+                        padding: "10px 12px",
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                        <strong style={{ flex: 1 }}>{s.title}</strong>
+                        <span style={{
+                          fontSize: "10px",
+                          fontFamily: "monospace",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          background: s.projectId ? "rgba(66,133,244,0.12)" : "rgba(52,208,123,0.12)",
+                          color: s.projectId ? "#7aa9f7" : "#34d07b",
+                        }}>
+                          {s.projectId ? "project" : "global"}
+                        </span>
+                        <button
+                          className={styles.btnSecondary}
+                          onClick={() => {
+                            void navigator.clipboard.writeText(s.body);
+                          }}
+                        >
+                          Copy
+                        </button>
+                        <button
+                          className={styles.btnSecondary}
+                          onClick={() => {
+                            setEditingPromptId(s.id);
+                            setPromptDraftTitle(s.title);
+                            setPromptDraftBody(s.body);
+                            setPromptDraftGlobal(!s.projectId);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className={styles.btnDanger}
+                          onClick={() => deleteSnippet(s.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      <pre style={{
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        color: "#9090b0",
+                        whiteSpace: "pre-wrap",
+                        margin: 0,
+                        maxHeight: "140px",
+                        overflowY: "auto",
+                      }}>
+                        {s.body}
+                      </pre>
                     </div>
                   ))}
                 </div>
